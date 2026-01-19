@@ -88,9 +88,9 @@ def import_doctors_from_excel(file_path, db, Doctor):
                 headers.append('')
         
         # 定義匯出檔案的標準欄位順序（與 export.py 和表格顯示順序完全一致）
-        # 表格顯示順序：編號、醫師、科別、性別、狀態、聯絡窗口、合作品牌、報價區間、經營社群、醫師社群
-        # 匯出標題順序：編號、醫師、科別、性別、狀態、聯絡窗口、合作品牌、報價區間、經營社群、醫師社群、建立時間、更新時間
-        expected_headers = ['編號', '醫師', '科別', '性別', '狀態', '聯絡窗口', '合作品牌', '報價區間', '經營社群', '醫師社群', '建立時間', '更新時間']
+        # 表格顯示順序：編號、醫師、科別、性別、狀態、聯絡窗口、報價區間、經營社群、醫師社群、合作品牌
+        # 匯出標題順序：編號、醫師、科別、性別、狀態、聯絡窗口、報價區間、經營社群、醫師社群、合作品牌、建立時間、更新時間
+        expected_headers = ['編號', '醫師', '科別', '性別', '狀態', '聯絡窗口', '報價區間', '經營社群', '醫師社群', '合作品牌', '建立時間', '更新時間']
         
         # 找到各欄位的索引位置（優先使用標準順序，如果標題匹配）
         column_map = {}
@@ -195,7 +195,7 @@ def import_doctors_from_excel(file_path, db, Doctor):
                             return str(value).strip()
                     return ''
                 
-                # 按照匯出格式的順序讀取：編號, 醫師, 科別, 性別, 狀態, 聯絡窗口, 合作品牌, 報價區間, 經營社群, 醫師社群
+                # 按照匯出格式的順序讀取：編號, 醫師, 科別, 性別, 狀態, 聯絡窗口, 報價區間, 經營社群, 醫師社群, 合作品牌
                 email = get_cell_value('醫師', 1)
                 
                 # 如果醫師欄位為空，跳過這一行
@@ -208,10 +208,10 @@ def import_doctors_from_excel(file_path, db, Doctor):
                 gender = get_cell_value('性別', 3).strip() if get_cell_value('性別', 3) else None
                 status = (get_cell_value('狀態', 4) or '未聯繫').strip()
                 contact_person = get_cell_value('聯絡窗口', 5).strip() if get_cell_value('聯絡窗口', 5) else None
-                current_brand = get_cell_value('合作品牌', 6).strip() if get_cell_value('合作品牌', 6) else None
-                price_range = get_cell_value('報價區間', 7).strip() if get_cell_value('報價區間', 7) else None
-                has_social_media = get_cell_value('經營社群', 8).strip() if get_cell_value('經營社群', 8) else None
-                social_media_link = get_cell_value('醫師社群', 9).strip() if get_cell_value('醫師社群', 9) else None
+                price_range = get_cell_value('報價區間', 6).strip() if get_cell_value('報價區間', 6) else None
+                has_social_media = get_cell_value('經營社群', 7).strip() if get_cell_value('經營社群', 7) else None
+                social_media_link = get_cell_value('醫師社群', 8).strip() if get_cell_value('醫師社群', 8) else None
+                current_brand = get_cell_value('合作品牌', 9).strip() if get_cell_value('合作品牌', 9) else None
                 
                 # 檢查是否已存在相同email的醫師（避免重複匯入）
                 existing_doctor = Doctor.query.filter_by(email=email).first()
