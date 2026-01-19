@@ -20,7 +20,7 @@ python3 init_db.py
 # 啟動應用
 echo "✅ 啟動系統..."
 echo ""
-echo "🌐 開啟瀏覽器訪問：http://localhost:5000"
+echo "🌐 開啟瀏覽器訪問：http://localhost:8080"
 echo ""
 echo "📝 預設帳號："
 echo "   管理員 - 帳號: admin  密碼: admin123"

@@ -106,7 +106,7 @@
 
             <!-- 統計卡片 -->
             <div class="row mb-4">
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="stat-card">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
@@ -117,36 +117,25 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <p class="mb-0">已簽約</p>
+                                <p class="mb-0">公司簽約</p>
                                 <h3 id="contractedCount">0</h3>
                             </div>
                             <i class="bi bi-file-earmark-check-fill" style="font-size: 3rem; opacity: 0.3;"></i>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <p class="mb-0">合作中</p>
-                                <h3 id="cooperatingCount">0</h3>
+                                <p class="mb-0">合作過</p>
+                                <h3 id="cooperatedCount">0</h3>
                             </div>
-                            <i class="bi bi-hand-thumbs-up-fill" style="font-size: 3rem; opacity: 0.3;"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="mb-0">洽談中</p>
-                                <h3 id="negotiatingCount">0</h3>
-                            </div>
-                            <i class="bi bi-chat-dots-fill" style="font-size: 3rem; opacity: 0.3;"></i>
+                            <i class="bi bi-clock-history" style="font-size: 3rem; opacity: 0.3;"></i>
                         </div>
                     </div>
                 </div>
@@ -156,20 +145,20 @@
             <div class="search-section">
                 <div class="row">
                     <div class="col-md-3 mb-2">
-                        <input type="text" class="form-control" id="searchInput" placeholder="🔍 搜尋姓名、電話、Email">
+                        <input type="text" class="form-control" id="searchInput" placeholder="🔍 搜尋醫師">
                     </div>
                     <div class="col-md-2 mb-2">
-                        <select class="form-select" id="specialtyFilter">
-                            <option value="">所有科別</option>
-                            <option value="內科">內科</option>
-                            <option value="外科">外科</option>
-                            <option value="小兒科">小兒科</option>
-                            <option value="骨科">骨科</option>
-                            <option value="婦產科">婦產科</option>
-                            <option value="眼科">眼科</option>
-                            <option value="皮膚科">皮膚科</option>
-                            <option value="牙科">牙科</option>
-                        </select>
+                        <input type="text" class="form-control" id="specialtyFilter" placeholder="搜尋科別" list="specialtySuggestions">
+                        <datalist id="specialtySuggestions">
+                            <option value="內科">
+                            <option value="外科">
+                            <option value="小兒科">
+                            <option value="骨科">
+                            <option value="婦產科">
+                            <option value="眼科">
+                            <option value="皮膚科">
+                            <option value="牙科">
+                        </datalist>
                     </div>
                     <div class="col-md-2 mb-2">
                         <select class="form-select" id="genderFilter">
@@ -181,16 +170,17 @@
                     <div class="col-md-2 mb-2">
                         <select class="form-select" id="statusFilter">
                             <option value="">所有狀態</option>
-                            <option value="洽談中">洽談中</option>
-                            <option value="已簽約">已簽約</option>
-                            <option value="合作中">合作中</option>
+                            <option value="公司簽約">公司簽約</option>
+                            <option value="合作過">合作過</option>
+                            <option value="已經約">已經約</option>
+                            <option value="未聯繫">未聯繫</option>
                         </select>
                     </div>
                     <div class="col-md-3 mb-2">
                         <button onclick="addDoctor()" class="btn btn-custom me-2">
                             <i class="bi bi-plus-circle"></i> 新增醫師
                         </button>
-                        <button onclick="exportExcel()" class="btn btn-success">
+                        <button id="exportExcelBtn" onclick="exportExcel()" class="btn btn-success" style="display: none;">
                             <i class="bi bi-file-earmark-excel"></i> 匯出 Excel
                         </button>
                     </div>
@@ -202,14 +192,17 @@
                 <table class="table table-hover">
                     <thead class="table-light sticky-top">
                         <tr>
-                            <th>編號</th>
-                            <th>姓名</th>
-                            <th>電話</th>
-                            <th>Email</th>
+                            <th style="width: 60px;">編號</th>
+                            <th style="width: 120px;">醫師</th>
                             <th>科別</th>
-                            <th>性別</th>
-                            <th>狀態</th>
-                            <th>操作</th>
+                            <th style="width: 80px;">性別</th>
+                            <th style="width: 100px;">狀態</th>
+                            <th style="width: 100px;">聯絡窗口</th>
+                            <th style="width: 150px;">合作品牌</th>
+                            <th style="width: 120px;">報價區間</th>
+                            <th style="width: 100px;">經營社群</th>
+                            <th style="width: 120px;">醫師社群</th>
+                            <th style="width: 120px;">操作</th>
                         </tr>
                     </thead>
                     <tbody id="doctorList">
@@ -231,30 +224,22 @@
                     <form id="doctorForm">
                         <input type="hidden" id="doctorId">
                         <div class="mb-3">
-                            <label class="form-label">姓名 *</label>
-                            <input type="text" class="form-control" id="doctorName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">電話</label>
-                            <input type="text" class="form-control" id="doctorPhone">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" id="doctorEmail">
+                            <label class="form-label">醫師</label>
+                            <input type="text" class="form-control" id="doctorEmail">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">科別</label>
-                            <select class="form-select" id="doctorSpecialty">
-                                <option value="">請選擇</option>
-                                <option value="內科">內科</option>
-                                <option value="外科">外科</option>
-                                <option value="小兒科">小兒科</option>
-                                <option value="骨科">骨科</option>
-                                <option value="婦產科">婦產科</option>
-                                <option value="眼科">眼科</option>
-                                <option value="皮膚科">皮膚科</option>
-                                <option value="牙科">牙科</option>
-                            </select>
+                            <input type="text" class="form-control" id="doctorSpecialty" placeholder="請輸入科別" list="doctorSpecialtySuggestions">
+                            <datalist id="doctorSpecialtySuggestions">
+                                <option value="內科">
+                                <option value="外科">
+                                <option value="小兒科">
+                                <option value="骨科">
+                                <option value="婦產科">
+                                <option value="眼科">
+                                <option value="皮膚科">
+                                <option value="牙科">
+                            </datalist>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">性別</label>
@@ -267,10 +252,42 @@
                         <div class="mb-3">
                             <label class="form-label">狀態</label>
                             <select class="form-select" id="doctorStatus">
-                                <option value="洽談中">洽談中</option>
-                                <option value="已簽約">已簽約</option>
-                                <option value="合作中">合作中</option>
+                                <option value="未聯繫">未聯繫</option>
+                                <option value="公司簽約">公司簽約</option>
+                                <option value="合作過">合作過</option>
+                                <option value="已經約">已經約</option>
                             </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">聯絡窗口</label>
+                            <select class="form-select" id="doctorContactPerson">
+                                <option value="">請選擇</option>
+                                <option value="Nathan">Nathan</option>
+                                <option value="Chloe">Chloe</option>
+                                <option value="Tim">Tim</option>
+                                <option value="Tiffany">Tiffany</option>
+                                <option value="公司">公司</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">經營社群</label>
+                            <select class="form-select" id="doctorHasSocialMedia">
+                                <option value="">請選擇</option>
+                                <option value="是">是</option>
+                                <option value="否">否</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">醫師社群</label>
+                            <input type="url" class="form-control" id="doctorSocialMediaLink" placeholder="請輸入連結網址">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">合作品牌</label>
+                            <input type="text" class="form-control" id="doctorCurrentBrand" placeholder="請輸入合作品牌">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">報價區間</label>
+                            <input type="text" class="form-control" id="doctorPriceRange" placeholder="例如：10,000-50,000">
                         </div>
                     </form>
                 </div>
@@ -297,6 +314,8 @@
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('mainContainer').style.display = 'block';
                 document.getElementById('userInfo').textContent = `👤 ${data.username} ${isAdmin ? '(主管)' : '(一般)'}`;
+                // 只有管理员才显示导出Excel按钮
+                document.getElementById('exportExcelBtn').style.display = isAdmin ? 'inline-block' : 'none';
                 loadData();
             } else {
                 document.getElementById('loginContainer').style.display = 'block';
@@ -333,6 +352,11 @@
         async function loadData() {
             await loadStats();
             await loadDoctors();
+            // 只在初始載入時更新科別建議列表
+            if (!window.specialtySuggestionsLoaded) {
+                await updateSpecialtySuggestions();
+                window.specialtySuggestionsLoaded = true;
+            }
         }
 
         // 載入統計
@@ -341,9 +365,8 @@
             const data = await response.json();
             
             document.getElementById('totalCount').textContent = data.total;
-            document.getElementById('contractedCount').textContent = data.contracted;
-            document.getElementById('cooperatingCount').textContent = data.cooperating;
-            document.getElementById('negotiatingCount').textContent = data.negotiating;
+            document.getElementById('contractedCount').textContent = data.company_contracted;
+            document.getElementById('cooperatedCount').textContent = data.cooperated;
         }
 
         // 載入醫師列表
@@ -360,28 +383,68 @@
             renderDoctors();
         }
 
+        // 更新科別建議列表
+        async function updateSpecialtySuggestions() {
+            // 獲取所有醫師資料以提取科別（不受篩選影響）
+            const response = await fetch('/api/doctors');
+            const allDoctors = await response.json();
+            
+            // 提取所有唯一的科別
+            const specialties = [...new Set(allDoctors.map(d => d.specialty).filter(s => s && s.trim()))];
+            
+            // 更新兩個datalist
+            const specialtySuggestions = document.getElementById('specialtySuggestions');
+            const doctorSpecialtySuggestions = document.getElementById('doctorSpecialtySuggestions');
+            
+            // 預設科別選項
+            const defaultSpecialties = ['內科', '外科', '小兒科', '骨科', '婦產科', '眼科', '皮膚科', '牙科'];
+            const allSpecialties = [...new Set([...defaultSpecialties, ...specialties])];
+            
+            specialtySuggestions.innerHTML = '';
+            doctorSpecialtySuggestions.innerHTML = '';
+            
+            allSpecialties.forEach(spec => {
+                const option1 = document.createElement('option');
+                option1.value = spec;
+                specialtySuggestions.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = spec;
+                doctorSpecialtySuggestions.appendChild(option2);
+            });
+        }
+
         // 渲染醫師列表
         function renderDoctors() {
             const tbody = document.getElementById('doctorList');
             tbody.innerHTML = '';
             
-            currentDoctors.forEach(doctor => {
+            currentDoctors.forEach((doctor, index) => {
                 const statusBadge = getStatusBadge(doctor.status);
+                const socialMediaLink = doctor.social_media_link ? 
+                    `<a href="${doctor.social_media_link}" target="_blank" class="text-primary">
+                        <i class="bi bi-link-45deg"></i> 連結
+                    </a>` : '-';
+                // 使用索引+1作为显示编号，删除后自动递补
+                const displayNumber = index + 1;
                 const row = `
                     <tr>
-                        <td>${doctor.id}</td>
-                        <td><strong>${doctor.name}</strong></td>
-                        <td>${doctor.phone || '-'}</td>
-                        <td>${doctor.email || '-'}</td>
+                        <td>${displayNumber}</td>
+                        <td style="font-size: 0.9rem;">${doctor.email || '-'}</td>
                         <td>${doctor.specialty || '-'}</td>
                         <td>${doctor.gender || '-'}</td>
                         <td>${statusBadge}</td>
+                        <td>${doctor.contact_person || '-'}</td>
+                        <td>${doctor.current_brand || '-'}</td>
+                        <td>${doctor.price_range || '-'}</td>
+                        <td>${doctor.has_social_media || '-'}</td>
+                        <td>${socialMediaLink}</td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary" onclick="editDoctor(${doctor.id})">
                                 <i class="bi bi-pencil"></i> 編輯
                             </button>
                             ${isAdmin ? `
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteDoctor(${doctor.id})">
+                            <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteDoctor(${doctor.id})">
                                 <i class="bi bi-trash"></i> 刪除
                             </button>
                             ` : ''}
@@ -395,9 +458,10 @@
         // 取得狀態標籤
         function getStatusBadge(status) {
             const badges = {
-                '洽談中': '<span class="badge bg-warning text-dark">洽談中</span>',
-                '已簽約': '<span class="badge bg-info">已簽約</span>',
-                '合作中': '<span class="badge bg-success">合作中</span>'
+                '公司簽約': '<span class="badge bg-info">公司簽約</span>',
+                '合作過': '<span class="badge bg-success">合作過</span>',
+                '已經約': '<span class="badge bg-primary">已經約</span>',
+                '未聯繫': '<span class="badge bg-secondary">未聯繫</span>'
             };
             return badges[status] || status;
         }
@@ -415,12 +479,15 @@
             const doctor = currentDoctors.find(d => d.id === id);
             document.getElementById('modalTitle').textContent = '編輯醫師';
             document.getElementById('doctorId').value = doctor.id;
-            document.getElementById('doctorName').value = doctor.name;
-            document.getElementById('doctorPhone').value = doctor.phone || '';
             document.getElementById('doctorEmail').value = doctor.email || '';
             document.getElementById('doctorSpecialty').value = doctor.specialty || '';
             document.getElementById('doctorGender').value = doctor.gender || '';
             document.getElementById('doctorStatus').value = doctor.status || '';
+            document.getElementById('doctorContactPerson').value = doctor.contact_person || '';
+            document.getElementById('doctorHasSocialMedia').value = doctor.has_social_media || '';
+            document.getElementById('doctorSocialMediaLink').value = doctor.social_media_link || '';
+            document.getElementById('doctorCurrentBrand').value = doctor.current_brand || '';
+            document.getElementById('doctorPriceRange').value = doctor.price_range || '';
             new bootstrap.Modal(document.getElementById('doctorModal')).show();
         }
 
@@ -428,12 +495,15 @@
         async function saveDoctor() {
             const id = document.getElementById('doctorId').value;
             const data = {
-                name: document.getElementById('doctorName').value,
-                phone: document.getElementById('doctorPhone').value,
                 email: document.getElementById('doctorEmail').value,
                 specialty: document.getElementById('doctorSpecialty').value,
                 gender: document.getElementById('doctorGender').value,
-                status: document.getElementById('doctorStatus').value
+                status: document.getElementById('doctorStatus').value,
+                contact_person: document.getElementById('doctorContactPerson').value,
+                has_social_media: document.getElementById('doctorHasSocialMedia').value,
+                social_media_link: document.getElementById('doctorSocialMediaLink').value,
+                current_brand: document.getElementById('doctorCurrentBrand').value,
+                price_range: document.getElementById('doctorPriceRange').value
             };
             
             const url = id ? `/api/doctors/${id}` : '/api/doctors';
@@ -448,33 +518,72 @@
             if (response.ok) {
                 bootstrap.Modal.getInstance(document.getElementById('doctorModal')).hide();
                 loadData();
+                updateSpecialtySuggestions();
             } else {
-                alert('儲存失敗！');
+                const errorData = await response.json();
+                alert('儲存失敗！\n' + (errorData.error || '未知錯誤'));
             }
         }
 
         // 刪除醫師
         async function deleteDoctor(id) {
-            if (!confirm('確定要刪除這位醫師嗎？')) return;
+            if (!isAdmin) {
+                alert('只有主管才能刪除醫師！');
+                return;
+            }
             
-            const response = await fetch(`/api/doctors/${id}`, {method: 'DELETE'});
+            if (!confirm('確定要刪除這位醫師嗎？此操作無法復原！')) {
+                return;
+            }
             
-            if (response.ok) {
-                loadData();
-            } else {
-                const data = await response.json();
-                alert(data.error || '刪除失敗！');
+            try {
+                const response = await fetch(`/api/doctors/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('刪除成功！');
+                    loadData();
+                } else {
+                    const errorData = await response.json();
+                    alert('刪除失敗！\n' + (errorData.error || '未知錯誤'));
+                }
+            } catch (error) {
+                alert('刪除失敗！\n' + error.message);
             }
         }
 
         // 匯出 Excel
         async function exportExcel() {
-            window.location.href = '/api/export';
+            if (!isAdmin) {
+                alert('只有主管才能匯出Excel！');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/export');
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '醫師資料.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const errorData = await response.json();
+                    alert('匯出失敗！\n' + (errorData.error || '未知錯誤'));
+                }
+            } catch (error) {
+                alert('匯出失敗！\n' + error.message);
+            }
         }
 
         // 監聽篩選變化
         document.getElementById('searchInput').addEventListener('input', loadDoctors);
-        document.getElementById('specialtyFilter').addEventListener('change', loadDoctors);
+        document.getElementById('specialtyFilter').addEventListener('input', loadDoctors);
         document.getElementById('genderFilter').addEventListener('change', loadDoctors);
         document.getElementById('statusFilter').addEventListener('change', loadDoctors);
 

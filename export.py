@@ -10,7 +10,7 @@ def export_doctors_to_excel(doctors):
     sheet.title = "醫師資料"
     
     # 設定標題列
-    headers = ['編號', '姓名', '電話', 'Email', '科別', '性別', '合作狀態', '建立時間', '更新時間']
+    headers = ['編號', '醫師', '科別', '性別', '狀態', '聯絡窗口', '合作品牌', '報價區間', '經營社群', '醫師社群', '建立時間', '更新時間']
     sheet.append(headers)
     
     # 設定標題列樣式
@@ -24,15 +24,18 @@ def export_doctors_to_excel(doctors):
         cell.alignment = Alignment(horizontal='center', vertical='center')
     
     # 寫入資料
-    for doctor in doctors:
+    for index, doctor in enumerate(doctors, 1):
         row_data = [
-            doctor.id,
-            doctor.name,
-            doctor.phone or '',
+            index,  # 使用索引+1作为编号
             doctor.email or '',
             doctor.specialty or '',
             doctor.gender or '',
             doctor.status or '',
+            doctor.contact_person or '',
+            doctor.has_social_media or '',
+            doctor.social_media_link or '',
+            doctor.current_brand or '',
+            doctor.price_range or '',
             doctor.created_at.strftime('%Y-%m-%d %H:%M:%S') if doctor.created_at else '',
             doctor.updated_at.strftime('%Y-%m-%d %H:%M:%S') if doctor.updated_at else ''
         ]
@@ -41,14 +44,17 @@ def export_doctors_to_excel(doctors):
     # 調整欄寬
     column_widths = {
         'A': 8,   # 編號
-        'B': 15,  # 姓名
-        'C': 15,  # 電話
-        'D': 25,  # Email
-        'E': 12,  # 科別
-        'F': 8,   # 性別
-        'G': 12,  # 合作狀態
-        'H': 20,  # 建立時間
-        'I': 20   # 更新時間
+        'B': 25,  # 醫師
+        'C': 12,  # 科別
+        'D': 8,   # 性別
+        'E': 12,  # 合作狀態
+        'F': 12,  # 聯絡窗口
+        'G': 12,  # 經營社群
+        'H': 30,  # 醫師社群
+        'I': 20,  # 目前合作品牌
+        'J': 15,  # 報價區間
+        'K': 20,  # 建立時間
+        'L': 20   # 更新時間
     }
     
     for col, width in column_widths.items():

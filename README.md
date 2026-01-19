@@ -43,7 +43,7 @@ python app.py
 ```
 
 #### 4. 開啟瀏覽器
-訪問：`http://localhost:5000`
+訪問：`http://localhost:8080`
 
 #### 或使用一鍵啟動腳本（macOS/Linux）
 ```bash
