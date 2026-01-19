@@ -59,7 +59,7 @@ def login():
     password = data.get('password')
     
     # 簡單的登入驗證（實際應用應該使用資料庫和加密密碼）
-    if username == 'admin' and password == 'admin123':
+    if username == 'admin' and password == 'Bcm13011579!@':
         session['logged_in'] = True
         session['is_admin'] = True
         session['username'] = username
