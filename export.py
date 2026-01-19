@@ -10,9 +10,9 @@ def export_doctors_to_excel(doctors):
     sheet.title = "醫師資料"
     
     # 設定標題列（與表格顯示順序完全一致）
-    # 表格順序：編號、醫師、科別、性別、狀態、聯絡窗口、報價區間、經營社群、醫師社群、合作品牌、操作
-    # 匯出順序：編號、醫師、科別、性別、狀態、聯絡窗口、報價區間、經營社群、醫師社群、合作品牌、建立時間、更新時間
-    headers = ['編號', '醫師', '科別', '性別', '狀態', '聯絡窗口', '報價區間', '經營社群', '醫師社群', '合作品牌', '建立時間', '更新時間']
+    # 表格順序：編號、醫師、科別、性別、狀態、聯絡窗口、合作品牌、報價區間、經營社群、醫師社群、操作
+    # 匯出順序：編號、醫師、科別、性別、狀態、聯絡窗口、合作品牌、報價區間、經營社群、醫師社群、建立時間、更新時間
+    headers = ['編號', '醫師', '科別', '性別', '狀態', '聯絡窗口', '合作品牌', '報價區間', '經營社群', '醫師社群', '建立時間', '更新時間']
     sheet.append(headers)
     
     # 設定標題列樣式
@@ -34,10 +34,10 @@ def export_doctors_to_excel(doctors):
             doctor.gender or '',
             doctor.status or '',
             doctor.contact_person or '',
+            doctor.current_brand or '',
             doctor.price_range or '',
             doctor.has_social_media or '',
             doctor.social_media_link or '',
-            doctor.current_brand or '',
             doctor.created_at.strftime('%Y-%m-%d %H:%M:%S') if doctor.created_at else '',
             doctor.updated_at.strftime('%Y-%m-%d %H:%M:%S') if doctor.updated_at else ''
         ]
@@ -51,10 +51,10 @@ def export_doctors_to_excel(doctors):
         'D': 8,   # 性別
         'E': 12,  # 狀態
         'F': 12,  # 聯絡窗口
-        'G': 15,  # 報價區間
-        'H': 12,  # 經營社群
-        'I': 30,  # 醫師社群
-        'J': 20,  # 合作品牌
+        'G': 20,  # 合作品牌
+        'H': 15,  # 報價區間
+        'I': 12,  # 經營社群
+        'J': 30,  # 醫師社群
         'K': 20,  # 建立時間
         'L': 20   # 更新時間
     }
