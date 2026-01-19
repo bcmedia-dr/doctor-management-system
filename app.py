@@ -5,7 +5,7 @@ import os
 from functools import wraps
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-change-this'
+app.config['SECRET_KEY'] = 'kJ8mP2qL9xY3nM7tB5zX4cV6wN8bH1'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///doctors.db')
 if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://')
@@ -64,7 +64,7 @@ def login():
         session['is_admin'] = True
         session['username'] = username
         return jsonify({'success': True, 'is_admin': True})
-    elif username == 'user' and password == 'user123':
+    elif username == 'user' and password == 'Bcm13011579':
         session['logged_in'] = True
         session['is_admin'] = False
         session['username'] = username
