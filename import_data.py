@@ -153,7 +153,21 @@ def import_doctors_from_excel(file_path, db, Doctor):
                 elif '醫師社群' in header_str and '醫師社群' not in column_map:
                     column_map['醫師社群'] = idx
         
+        # 檢查必要的欄位是否存在
+        required_fields = ['醫師']
+        missing_fields = [field for field in required_fields if field not in column_map]
+        if missing_fields:
+            wb.close()
+            return {
+                'success': False,
+                'success_count': 0,
+                'errors': [f'匯入失敗：Excel 檔案中缺少必要的欄位：{", ".join(missing_fields)}。請確認檔案格式正確。']
+            }
+        
         # 從第二行開始讀取資料
+        batch_size = 50  # 每批處理50筆資料
+        doctors_to_add = []
+        
         for row_num, row in enumerate(sheet.iter_rows(min_row=2, values_only=False), start=2):
             # 跳過空行
             if not any(cell.value for cell in row):
@@ -170,7 +184,9 @@ def import_doctors_from_excel(file_path, db, Doctor):
                         # 處理不同類型的值
                         if isinstance(value, (int, float)):
                             # 數字類型直接轉字符串
-                            return str(int(value)) if isinstance(value, float) and value.is_integer() else str(value)
+                            if isinstance(value, float) and value.is_integer():
+                                return str(int(value))
+                            return str(value)
                         elif isinstance(value, datetime):
                             # 日期時間類型轉字符串
                             return value.strftime('%Y-%m-%d %H:%M:%S')
@@ -183,17 +199,19 @@ def import_doctors_from_excel(file_path, db, Doctor):
                 email = get_cell_value('醫師', 1)
                 
                 # 如果醫師欄位為空，跳過這一行
-                if not email:
+                if not email or not email.strip():
                     continue
                 
-                specialty = get_cell_value('科別', 2)
-                gender = get_cell_value('性別', 3)
-                status = get_cell_value('狀態', 4) or '未聯繫'
-                contact_person = get_cell_value('聯絡窗口', 5)
-                current_brand = get_cell_value('合作品牌', 6)
-                price_range = get_cell_value('報價區間', 7)
-                has_social_media = get_cell_value('經營社群', 8)
-                social_media_link = get_cell_value('醫師社群', 9)
+                # 清理和驗證資料
+                email = email.strip()
+                specialty = get_cell_value('科別', 2).strip() if get_cell_value('科別', 2) else None
+                gender = get_cell_value('性別', 3).strip() if get_cell_value('性別', 3) else None
+                status = (get_cell_value('狀態', 4) or '未聯繫').strip()
+                contact_person = get_cell_value('聯絡窗口', 5).strip() if get_cell_value('聯絡窗口', 5) else None
+                current_brand = get_cell_value('合作品牌', 6).strip() if get_cell_value('合作品牌', 6) else None
+                price_range = get_cell_value('報價區間', 7).strip() if get_cell_value('報價區間', 7) else None
+                has_social_media = get_cell_value('經營社群', 8).strip() if get_cell_value('經營社群', 8) else None
+                social_media_link = get_cell_value('醫師社群', 9).strip() if get_cell_value('醫師社群', 9) else None
                 
                 # 檢查是否已存在相同email的醫師（避免重複匯入）
                 existing_doctor = Doctor.query.filter_by(email=email).first()
@@ -215,18 +233,55 @@ def import_doctors_from_excel(file_path, db, Doctor):
                     price_range=price_range if price_range else None
                 )
                 
-                db.session.add(doctor)
+                doctors_to_add.append(doctor)
                 success_count += 1
+                
+                # 批量提交以提高效率
+                if len(doctors_to_add) >= batch_size:
+                    try:
+                        for doc in doctors_to_add:
+                            db.session.add(doc)
+                        db.session.commit()
+                        doctors_to_add = []
+                    except Exception as batch_error:
+                        db.session.rollback()
+                        errors.append(f"第 {row_num} 行批量提交失敗：{str(batch_error)}")
+                        # 嘗試逐筆添加
+                        for doc in doctors_to_add:
+                            try:
+                                db.session.add(doc)
+                                db.session.commit()
+                            except Exception as single_error:
+                                db.session.rollback()
+                                errors.append(f"醫師 '{doc.email}' 添加失敗：{str(single_error)}")
+                                success_count -= 1  # 扣除失敗的計數
+                        doctors_to_add = []
                 
             except Exception as e:
                 errors.append(f"第 {row_num} 行處理失敗：{str(e)}")
                 continue
         
+        # 提交剩餘的資料
+        if doctors_to_add:
+            try:
+                for doc in doctors_to_add:
+                    db.session.add(doc)
+                db.session.commit()
+            except Exception as batch_error:
+                db.session.rollback()
+                errors.append(f"批量提交剩餘資料失敗：{str(batch_error)}")
+                # 嘗試逐筆添加
+                for doc in doctors_to_add:
+                    try:
+                        db.session.add(doc)
+                        db.session.commit()
+                    except Exception as single_error:
+                        db.session.rollback()
+                        errors.append(f"醫師 '{doc.email}' 添加失敗：{str(single_error)}")
+                        success_count -= 1  # 扣除失敗的計數
+        
         # 關閉工作簿
         wb.close()
-        
-        # 提交所有變更
-        db.session.commit()
         
         return {
             'success': True,

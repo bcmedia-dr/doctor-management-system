@@ -239,40 +239,103 @@ def import_excel():
             'message': f'請上傳 Excel 檔案（支援格式：.xlsx、.xlsm、.xltx、.xltm）。如果您的檔案是 .xls 格式，請先用 Excel 轉換為 .xlsx 格式。'
         }), 400
     
+    file_path = None
     try:
-        # 儲存上傳的檔案
-        upload_folder = '/tmp'
+        # 檢查檔案大小（限制 10MB）
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        
+        if file_size == 0:
+            return jsonify({
+                'success': False,
+                'error': '檔案為空',
+                'message': '請選擇有效的 Excel 檔案'
+            }), 400
+        
+        if file_size > 10 * 1024 * 1024:  # 10MB
+            return jsonify({
+                'success': False,
+                'error': '檔案過大',
+                'message': '檔案大小超過 10MB，請選擇較小的檔案'
+            }), 400
+        
+        # 儲存上傳的檔案（使用系統臨時目錄）
+        import tempfile
+        upload_folder = tempfile.gettempdir()
         os.makedirs(upload_folder, exist_ok=True)
         filename = secure_filename(file.filename)
-        file_path = os.path.join(upload_folder, f'import_{datetime.now().strftime("%Y%m%d_%H%M%S")}_{filename}')
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        file_path = os.path.join(upload_folder, f'import_{timestamp}_{filename}')
+        
+        # 確保檔案路徑安全
+        if not os.path.isabs(file_path):
+            file_path = os.path.abspath(file_path)
+        
+        # 保存檔案
         file.save(file_path)
+        
+        # 驗證檔案是否成功保存
+        if not os.path.exists(file_path):
+            return jsonify({
+                'success': False,
+                'error': '檔案保存失敗',
+                'message': '無法保存上傳的檔案，請重試'
+            }), 500
         
         # 匯入資料
         from import_data import import_doctors_from_excel
         result = import_doctors_from_excel(file_path, db, Doctor)
         
         # 刪除臨時檔案
-        try:
-            os.remove(file_path)
-        except:
-            pass
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as cleanup_error:
+                # 記錄清理錯誤但不影響結果
+                print(f"清理臨時檔案失敗: {cleanup_error}")
         
-        if result['success']:
+        if result.get('success'):
             return jsonify({
                 'success': True,
-                'message': f'成功匯入 {result["success_count"]} 筆資料',
-                'success_count': result['success_count'],
-                'errors': result['errors']
+                'message': f'成功匯入 {result.get("success_count", 0)} 筆資料',
+                'success_count': result.get('success_count', 0),
+                'errors': result.get('errors', [])
             })
         else:
+            error_messages = result.get('errors', ['匯入失敗'])
             return jsonify({
                 'success': False,
                 'error': '匯入失敗',
-                'errors': result['errors']
+                'message': error_messages[0] if error_messages else '匯入失敗',
+                'errors': error_messages
             }), 500
             
     except Exception as e:
-        return jsonify({'error': f'匯入失敗：{str(e)}'}), 500
+        # 確保清理臨時檔案
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except:
+                pass
+        
+        error_msg = str(e)
+        # 提供更友好的錯誤訊息
+        if 'Permission denied' in error_msg:
+            friendly_msg = '沒有權限讀取或寫入檔案'
+        elif 'No space left' in error_msg:
+            friendly_msg = '磁碟空間不足'
+        elif 'Connection' in error_msg or 'database' in error_msg.lower():
+            friendly_msg = '資料庫連線錯誤，請稍後再試'
+        else:
+            friendly_msg = error_msg
+        
+        return jsonify({
+            'success': False,
+            'error': '匯入失敗',
+            'message': f'匯入過程中發生錯誤：{friendly_msg}',
+            'errors': [friendly_msg]
+        }), 500
 
 def init_database():
     """初始化数据库，检查并更新表结构"""
