@@ -18,56 +18,56 @@ def init_database():
                 'email': 'wang@example.com',
                 'specialty': '內科',
                 'gender': '男',
-                'status': '已簽約'
+                'status': '公司簽約'
             },
             {
                 'name': '李小華',
                 'email': 'lee@example.com',
                 'specialty': '外科',
                 'gender': '女',
-                'status': '合作中'
+                'status': '合作過'
             },
             {
                 'name': '張美玲',
                 'email': 'chang@example.com',
                 'specialty': '小兒科',
                 'gender': '女',
-                'status': '洽談中'
+                'status': '未聯繫'
             },
             {
                 'name': '陳志強',
                 'email': 'chen@example.com',
                 'specialty': '骨科',
                 'gender': '男',
-                'status': '已簽約'
+                'status': '公司簽約'
             },
             {
                 'name': '林雅婷',
                 'email': 'lin@example.com',
                 'specialty': '婦產科',
                 'gender': '女',
-                'status': '合作中'
+                'status': '合作過'
             },
             {
                 'name': '黃建國',
                 'email': 'huang@example.com',
                 'specialty': '眼科',
                 'gender': '男',
-                'status': '洽談中'
+                'status': '未聯繫'
             },
             {
                 'name': '吳佳穎',
                 'email': 'wu@example.com',
                 'specialty': '皮膚科',
                 'gender': '女',
-                'status': '已簽約'
+                'status': '已經約'
             },
             {
                 'name': '周俊傑',
                 'email': 'chou@example.com',
                 'specialty': '牙科',
                 'gender': '男',
-                'status': '合作中'
+                'status': '合作過'
             }
         ]
         

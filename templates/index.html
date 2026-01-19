@@ -194,17 +194,24 @@
                         <input type="text" class="form-control" id="searchInput" placeholder="🔍 搜尋醫師">
                     </div>
                     <div class="col-md-2 mb-2">
-                        <input type="text" class="form-control" id="specialtyFilter" placeholder="搜尋科別" list="specialtySuggestions">
-                        <datalist id="specialtySuggestions">
-                            <option value="內科">
-                            <option value="外科">
-                            <option value="小兒科">
-                            <option value="骨科">
-                            <option value="婦產科">
-                            <option value="眼科">
-                            <option value="皮膚科">
-                            <option value="牙科">
-                        </datalist>
+                        <select class="form-select" id="specialtyFilter">
+                            <option value="">所有科別</option>
+                            <option value="小兒科">小兒科</option>
+                            <option value="家醫科">家醫科</option>
+                            <option value="耳鼻喉科">耳鼻喉科</option>
+                            <option value="內科">內科</option>
+                            <option value="外科">外科</option>
+                            <option value="婦產科">婦產科</option>
+                            <option value="皮膚科">皮膚科</option>
+                            <option value="泌尿科">泌尿科</option>
+                            <option value="精神科">精神科</option>
+                            <option value="中醫師">中醫師</option>
+                            <option value="營養師">營養師</option>
+                            <option value="復健科">復健科</option>
+                            <option value="腎臟科">腎臟科</option>
+                            <option value="心臟科">心臟科</option>
+                            <option value="神經科">神經科</option>
+                        </select>
                     </div>
                     <div class="col-md-2 mb-2">
                         <select class="form-select" id="genderFilter">
@@ -288,17 +295,24 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">科別</label>
-                            <input type="text" class="form-control" id="doctorSpecialty" placeholder="請輸入科別" list="doctorSpecialtySuggestions">
-                            <datalist id="doctorSpecialtySuggestions">
-                                <option value="內科">
-                                <option value="外科">
-                                <option value="小兒科">
-                                <option value="骨科">
-                                <option value="婦產科">
-                                <option value="眼科">
-                                <option value="皮膚科">
-                                <option value="牙科">
-                            </datalist>
+                            <select class="form-select" id="doctorSpecialty">
+                                <option value="">請選擇科別</option>
+                                <option value="小兒科">小兒科</option>
+                                <option value="家醫科">家醫科</option>
+                                <option value="耳鼻喉科">耳鼻喉科</option>
+                                <option value="內科">內科</option>
+                                <option value="外科">外科</option>
+                                <option value="婦產科">婦產科</option>
+                                <option value="皮膚科">皮膚科</option>
+                                <option value="泌尿科">泌尿科</option>
+                                <option value="精神科">精神科</option>
+                                <option value="中醫師">中醫師</option>
+                                <option value="營養師">營養師</option>
+                                <option value="復健科">復健科</option>
+                                <option value="腎臟科">腎臟科</option>
+                                <option value="心臟科">心臟科</option>
+                                <option value="神經科">神經科</option>
+                            </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">性別</label>
@@ -442,7 +456,7 @@
             renderDoctors();
         }
 
-        // 更新科別建議列表
+        // 更新科別選單（動態添加新科別）
         async function updateSpecialtySuggestions() {
             // 獲取所有醫師資料以提取科別（不受篩選影響）
             const response = await fetch('/api/doctors');
@@ -451,26 +465,33 @@
             // 提取所有唯一的科別
             const specialties = [...new Set(allDoctors.map(d => d.specialty).filter(s => s && s.trim()))];
             
-            // 更新兩個datalist
-            const specialtySuggestions = document.getElementById('specialtySuggestions');
-            const doctorSpecialtySuggestions = document.getElementById('doctorSpecialtySuggestions');
-            
-            // 預設科別選項
-            const defaultSpecialties = ['內科', '外科', '小兒科', '骨科', '婦產科', '眼科', '皮膚科', '牙科'];
+            // 預設科別選項（按順序）
+            const defaultSpecialties = ['小兒科', '家醫科', '耳鼻喉科', '內科', '外科', '婦產科', '皮膚科', '泌尿科', '精神科', '中醫師', '營養師', '復健科', '腎臟科', '心臟科', '神經科'];
             const allSpecialties = [...new Set([...defaultSpecialties, ...specialties])];
             
-            specialtySuggestions.innerHTML = '';
-            doctorSpecialtySuggestions.innerHTML = '';
-            
+            // 更新篩選選單
+            const specialtyFilter = document.getElementById('specialtyFilter');
+            const currentValue = specialtyFilter.value;
+            specialtyFilter.innerHTML = '<option value="">所有科別</option>';
             allSpecialties.forEach(spec => {
-                const option1 = document.createElement('option');
-                option1.value = spec;
-                specialtySuggestions.appendChild(option1);
-                
-                const option2 = document.createElement('option');
-                option2.value = spec;
-                doctorSpecialtySuggestions.appendChild(option2);
+                const option = document.createElement('option');
+                option.value = spec;
+                option.textContent = spec;
+                specialtyFilter.appendChild(option);
             });
+            specialtyFilter.value = currentValue;
+            
+            // 更新表單選單
+            const doctorSpecialty = document.getElementById('doctorSpecialty');
+            const currentFormValue = doctorSpecialty.value;
+            doctorSpecialty.innerHTML = '<option value="">請選擇科別</option>';
+            allSpecialties.forEach(spec => {
+                const option = document.createElement('option');
+                option.value = spec;
+                option.textContent = spec;
+                doctorSpecialty.appendChild(option);
+            });
+            doctorSpecialty.value = currentFormValue;
         }
 
         // 渲染醫師列表
@@ -642,7 +663,7 @@
 
         // 監聽篩選變化
         document.getElementById('searchInput').addEventListener('input', loadDoctors);
-        document.getElementById('specialtyFilter').addEventListener('input', loadDoctors);
+        document.getElementById('specialtyFilter').addEventListener('change', loadDoctors);
         document.getElementById('genderFilter').addEventListener('change', loadDoctors);
         document.getElementById('statusFilter').addEventListener('change', loadDoctors);
 
