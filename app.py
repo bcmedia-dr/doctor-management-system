@@ -313,8 +313,11 @@ def init_database():
             db.create_all()
 
 if __name__ == '__main__':
-    # 只在本地环境初始化数据库，云端环境不初始化
-    database_url = os.environ.get('DATABASE_URL', '')
-    if not database_url or database_url.startswith('sqlite'):
-        init_database()
+    with app.app_context():
+        try:
+            db.create_all()  # ✅ 只建立表格結構,不會清空數據
+            print("數據庫表已創建")
+        except Exception as e:
+            print(f"數據庫初始化錯誤: {e}")
+            db.create_all()
     app.run(host='0.0.0.0', port=8080, debug=True)
