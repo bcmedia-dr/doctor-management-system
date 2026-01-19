@@ -289,7 +289,7 @@
                     </div>
                     <div class="filter-group">
                         <select class="form-select" id="hasSocialMediaFilter">
-                            <option value="">是否經營社群</option>
+                            <option value="">經營社群</option>
                             <option value="是">是</option>
                             <option value="否">否</option>
                         </select>
@@ -299,6 +299,10 @@
                         <button onclick="addDoctor()" class="btn btn-custom">
                             <i class="bi bi-plus-circle"></i> 新增醫師
                         </button>
+                        <button id="importExcelBtn" onclick="document.getElementById('fileInput').click()" class="btn btn-info" style="display: none;">
+                            <i class="bi bi-file-earmark-arrow-up"></i> 匯入 Excel
+                        </button>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;" onchange="importExcel(event)">
                         <button id="exportExcelBtn" onclick="exportExcel()" class="btn btn-success" style="display: none;">
                             <i class="bi bi-file-earmark-excel"></i> 匯出 Excel
                         </button>
@@ -455,6 +459,7 @@
                 document.getElementById('mainContainer').style.display = 'block';
                 document.getElementById('userInfo').textContent = `👤 ${data.username} ${isAdmin ? '(主管)' : '(一般)'}`;
                 // 只有管理员才显示导出Excel按钮
+                document.getElementById('importExcelBtn').style.display = isAdmin ? 'inline-block' : 'none';
                 document.getElementById('exportExcelBtn').style.display = isAdmin ? 'inline-block' : 'none';
                 loadData();
             } else {
@@ -587,7 +592,7 @@
                         <td>${statusBadge}</td>
                         <td>${doctor.contact_person || '-'}</td>
                         <td>${doctor.current_brand || '-'}</td>
-                        <td>${doctor.price_range || '-'}</td>
+                        <td>${formatPriceRange(doctor.price_range)}</td>
                         <td>${doctor.has_social_media || '-'}</td>
                         <td>${socialMediaLink}</td>
                         <td>
@@ -616,6 +621,24 @@
                 '未聯繫': '<span class="badge bg-secondary">未聯繫</span>'
             };
             return badges[status] || status;
+        }
+
+        // 格式化報價區間（添加千位分隔符）
+        function formatPriceRange(priceRange) {
+            if (!priceRange || priceRange === '-') return '-';
+            
+            // 嘗試提取數字部分
+            const numbers = priceRange.match(/\d+/g);
+            if (!numbers) return priceRange;
+            
+            // 將數字格式化為帶千位分隔符的格式
+            let formatted = priceRange;
+            numbers.forEach(num => {
+                const formattedNum = parseInt(num).toLocaleString('zh-TW');
+                formatted = formatted.replace(num, formattedNum);
+            });
+            
+            return formatted;
         }
 
         // 新增醫師
@@ -702,6 +725,73 @@
                 }
             } catch (error) {
                 alert('刪除失敗！\n' + error.message);
+            }
+        }
+
+        // 匯入 Excel
+        async function importExcel(event) {
+            if (!isAdmin) {
+                alert('只有主管才能匯入Excel！');
+                event.target.value = ''; // 清空文件選擇
+                return;
+            }
+            
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+            
+            // 檢查檔案格式
+            if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                alert('請選擇 Excel 檔案 (.xlsx 或 .xls)');
+                event.target.value = '';
+                return;
+            }
+            
+            // 確認匯入
+            if (!confirm(`確定要匯入檔案「${file.name}」嗎？\n\n注意：已存在的醫師（相同名稱）將被跳過。`)) {
+                event.target.value = '';
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/import', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    let message = `匯入成功！\n成功匯入 ${result.success_count} 筆資料`;
+                    if (result.errors && result.errors.length > 0) {
+                        message += `\n\n警告：\n${result.errors.slice(0, 10).join('\n')}`;
+                        if (result.errors.length > 10) {
+                            message += `\n... 還有 ${result.errors.length - 10} 個警告`;
+                        }
+                    }
+                    alert(message);
+                    // 重新載入醫師列表
+                    loadDoctors();
+                    loadStats();
+                } else {
+                    let errorMsg = result.error || '匯入失敗';
+                    if (result.errors && result.errors.length > 0) {
+                        errorMsg += '\n\n錯誤詳情：\n' + result.errors.slice(0, 10).join('\n');
+                        if (result.errors.length > 10) {
+                            errorMsg += `\n... 還有 ${result.errors.length - 10} 個錯誤`;
+                        }
+                    }
+                    alert(errorMsg);
+                }
+            } catch (error) {
+                alert('匯入失敗！\n' + error.message);
+            } finally {
+                // 清空文件選擇，允許重新選擇相同檔案
+                event.target.value = '';
             }
         }
 

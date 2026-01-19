@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 from functools import wraps
 from sqlalchemy import inspect
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'kJ8mP2qL9xY3nM7tB5zX4cV6wN8bH1'
@@ -219,6 +220,55 @@ def export_excel():
     file_path = export_doctors_to_excel(doctors)
     
     return send_file(file_path, as_attachment=True, download_name='醫師資料.xlsx')
+
+@app.route('/api/import', methods=['POST'])
+@admin_required
+def import_excel():
+    if 'file' not in request.files:
+        return jsonify({'error': '沒有選擇檔案'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': '沒有選擇檔案'}), 400
+    
+    # 檢查檔案格式
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        return jsonify({'error': '檔案格式錯誤，請上傳 Excel 檔案 (.xlsx 或 .xls)'}), 400
+    
+    try:
+        # 儲存上傳的檔案
+        upload_folder = '/tmp'
+        os.makedirs(upload_folder, exist_ok=True)
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(upload_folder, f'import_{datetime.now().strftime("%Y%m%d_%H%M%S")}_{filename}')
+        file.save(file_path)
+        
+        # 匯入資料
+        from import_data import import_doctors_from_excel
+        result = import_doctors_from_excel(file_path, db, Doctor)
+        
+        # 刪除臨時檔案
+        try:
+            os.remove(file_path)
+        except:
+            pass
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'message': f'成功匯入 {result["success_count"]} 筆資料',
+                'success_count': result['success_count'],
+                'errors': result['errors']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '匯入失敗',
+                'errors': result['errors']
+            }), 500
+            
+    except Exception as e:
+        return jsonify({'error': f'匯入失敗：{str(e)}'}), 500
 
 def init_database():
     """初始化数据库，检查并更新表结构"""
