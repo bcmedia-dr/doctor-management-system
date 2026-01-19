@@ -18,7 +18,7 @@ def init_database():
                 'email': 'wang@example.com',
                 'specialty': '內科',
                 'gender': '男',
-                'status': '公司簽約'
+                'status': '已簽約'
             },
             {
                 'name': '李小華',
@@ -39,7 +39,7 @@ def init_database():
                 'email': 'chen@example.com',
                 'specialty': '骨科',
                 'gender': '男',
-                'status': '公司簽約'
+                'status': '已簽約'
             },
             {
                 'name': '林雅婷',
@@ -60,7 +60,7 @@ def init_database():
                 'email': 'wu@example.com',
                 'specialty': '皮膚科',
                 'gender': '女',
-                'status': '已經約'
+                'status': '聯繫過'
             },
             {
                 'name': '周俊傑',

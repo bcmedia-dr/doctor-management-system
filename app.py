@@ -103,6 +103,7 @@ def get_doctors():
     specialty = request.args.get('specialty', '')
     gender = request.args.get('gender', '')
     status = request.args.get('status', '')
+    has_social_media = request.args.get('has_social_media', '')
     
     query = Doctor.query
     
@@ -120,6 +121,9 @@ def get_doctors():
     if status:
         query = query.filter_by(status=status)
     
+    if has_social_media:
+        query = query.filter_by(has_social_media=has_social_media)
+    
     doctors = query.all()
     return jsonify([doctor.to_dict() for doctor in doctors])
 
@@ -135,7 +139,7 @@ def create_doctor():
             email=data.get('email'),
             specialty=data.get('specialty'),
             gender=data.get('gender'),
-            status=data.get('status', '未聯繫'),
+            status=data.get('status', '未聯繫'),  # 默认状态改为未聯繫
             contact_person=data.get('contact_person'),
             has_social_media=data.get('has_social_media'),
             social_media_link=data.get('social_media_link'),
@@ -197,17 +201,13 @@ def get_stats():
         return jsonify({'error': '請先登入'}), 401
     
     total = Doctor.query.count()
-    company_contracted = Doctor.query.filter_by(status='公司簽約').count()
+    contracted = Doctor.query.filter_by(status='已簽約').count()
     cooperated = Doctor.query.filter_by(status='合作過').count()
-    already_contracted = Doctor.query.filter_by(status='已經約').count()
-    not_contacted = Doctor.query.filter_by(status='未聯繫').count()
     
     return jsonify({
         'total': total,
-        'company_contracted': company_contracted,
-        'cooperated': cooperated,
-        'already_contracted': already_contracted,
-        'not_contacted': not_contacted
+        'contracted': contracted,
+        'cooperated': cooperated
     })
 
 @app.route('/api/export')
@@ -259,5 +259,8 @@ def init_database():
             db.create_all()
 
 if __name__ == '__main__':
-    init_database()
+    # 只在本地环境初始化数据库，云端环境不初始化
+    database_url = os.environ.get('DATABASE_URL', '')
+    if not database_url or database_url.startswith('sqlite'):
+        init_database()
     app.run(host='0.0.0.0', port=8080, debug=True)

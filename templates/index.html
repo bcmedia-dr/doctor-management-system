@@ -63,6 +63,62 @@
             border-radius: 10px;
             margin-bottom: 20px;
         }
+        .search-section .form-control,
+        .search-section .form-select {
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+        .search-section .form-control:focus,
+        .search-section .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 150px;
+        }
+        .filter-group.small {
+            flex: 0 0 auto;
+            min-width: 120px;
+        }
+        .filter-group.search {
+            flex: 0 0 auto;
+            min-width: 180px;
+            max-width: 220px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: nowrap;
+            flex: 0 0 auto;
+        }
+        .filter-row {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 0;
+        }
+        @media (max-width: 768px) {
+            .filter-group {
+                flex: 1 1 100%;
+            }
+            .action-buttons {
+                justify-content: stretch;
+            }
+            .action-buttons .btn {
+                flex: 1;
+            }
+        }
         
         /* 表格整體優化 */
         .table-responsive {
@@ -167,7 +223,7 @@
                     <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <p class="mb-0">公司簽約</p>
+                                <p class="mb-0">已簽約</p>
                                 <h3 id="contractedCount">0</h3>
                             </div>
                             <i class="bi bi-file-earmark-check-fill" style="font-size: 3rem; opacity: 0.3;"></i>
@@ -189,11 +245,12 @@
 
             <!-- 搜尋與操作區 -->
             <div class="search-section">
-                <div class="row">
-                    <div class="col-md-3 mb-2">
+                <!-- 篩選區域與按鈕 -->
+                <div class="filter-row">
+                    <div class="filter-group search">
                         <input type="text" class="form-control" id="searchInput" placeholder="🔍 搜尋醫師">
                     </div>
-                    <div class="col-md-2 mb-2">
+                    <div class="filter-group">
                         <select class="form-select" id="specialtyFilter">
                             <option value="">所有科別</option>
                             <option value="小兒科">小兒科</option>
@@ -213,24 +270,33 @@
                             <option value="神經科">神經科</option>
                         </select>
                     </div>
-                    <div class="col-md-2 mb-2">
+                    <div class="filter-group small">
                         <select class="form-select" id="genderFilter">
                             <option value="">所有性別</option>
                             <option value="男">男</option>
                             <option value="女">女</option>
                         </select>
                     </div>
-                    <div class="col-md-2 mb-2">
+                    <div class="filter-group">
                         <select class="form-select" id="statusFilter">
                             <option value="">所有狀態</option>
-                            <option value="公司簽約">公司簽約</option>
+                            <option value="已簽約">已簽約</option>
                             <option value="合作過">合作過</option>
-                            <option value="已經約">已經約</option>
+                            <option value="聯繫過">聯繫過</option>
+                            <option value="有經紀">有經紀</option>
                             <option value="未聯繫">未聯繫</option>
                         </select>
                     </div>
-                    <div class="col-md-3 mb-2">
-                        <button onclick="addDoctor()" class="btn btn-custom me-2">
+                    <div class="filter-group">
+                        <select class="form-select" id="hasSocialMediaFilter">
+                            <option value="">是否經營社群</option>
+                            <option value="是">是</option>
+                            <option value="否">否</option>
+                        </select>
+                    </div>
+                    <!-- 操作按鈕區域 -->
+                    <div class="action-buttons">
+                        <button onclick="addDoctor()" class="btn btn-custom">
                             <i class="bi bi-plus-circle"></i> 新增醫師
                         </button>
                         <button id="exportExcelBtn" onclick="exportExcel()" class="btn btn-success" style="display: none;">
@@ -325,10 +391,11 @@
                         <div class="mb-3">
                             <label class="form-label">狀態</label>
                             <select class="form-select" id="doctorStatus">
-                                <option value="未聯繫">未聯繫</option>
-                                <option value="公司簽約">公司簽約</option>
+                                <option value="已簽約">已簽約</option>
                                 <option value="合作過">合作過</option>
-                                <option value="已經約">已經約</option>
+                                <option value="聯繫過">聯繫過</option>
+                                <option value="有經紀">有經紀</option>
+                                <option value="未聯繫">未聯繫</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -438,7 +505,7 @@
             const data = await response.json();
             
             document.getElementById('totalCount').textContent = data.total;
-            document.getElementById('contractedCount').textContent = data.company_contracted;
+            document.getElementById('contractedCount').textContent = data.contracted;
             document.getElementById('cooperatedCount').textContent = data.cooperated;
         }
 
@@ -448,8 +515,12 @@
             const specialty = document.getElementById('specialtyFilter').value;
             const gender = document.getElementById('genderFilter').value;
             const status = document.getElementById('statusFilter').value;
+            const hasSocialMedia = document.getElementById('hasSocialMediaFilter').value;
             
             const params = new URLSearchParams({search, specialty, gender, status});
+            if (hasSocialMedia) {
+                params.append('has_social_media', hasSocialMedia);
+            }
             const response = await fetch(`/api/doctors?${params}`);
             currentDoctors = await response.json();
             
@@ -538,9 +609,10 @@
         // 取得狀態標籤
         function getStatusBadge(status) {
             const badges = {
-                '公司簽約': '<span class="badge bg-info">公司簽約</span>',
-                '合作過': '<span class="badge bg-success">合作過</span>',
-                '已經約': '<span class="badge bg-primary">已經約</span>',
+                '已簽約': '<span class="badge bg-success">已簽約</span>',
+                '合作過': '<span class="badge bg-info">合作過</span>',
+                '聯繫過': '<span class="badge bg-primary">聯繫過</span>',
+                '有經紀': '<span class="badge bg-warning">有經紀</span>',
                 '未聯繫': '<span class="badge bg-secondary">未聯繫</span>'
             };
             return badges[status] || status;
@@ -666,6 +738,7 @@
         document.getElementById('specialtyFilter').addEventListener('change', loadDoctors);
         document.getElementById('genderFilter').addEventListener('change', loadDoctors);
         document.getElementById('statusFilter').addEventListener('change', loadDoctors);
+        document.getElementById('hasSocialMediaFilter').addEventListener('change', loadDoctors);
 
         // 初始化
         checkAuth();
