@@ -15,7 +15,6 @@ def init_database():
         sample_doctors = [
             {
                 'name': '王大明',
-                'phone': '0912-345-678',
                 'email': 'wang@example.com',
                 'specialty': '內科',
                 'gender': '男',
@@ -23,7 +22,6 @@ def init_database():
             },
             {
                 'name': '李小華',
-                'phone': '0923-456-789',
                 'email': 'lee@example.com',
                 'specialty': '外科',
                 'gender': '女',
@@ -31,7 +29,6 @@ def init_database():
             },
             {
                 'name': '張美玲',
-                'phone': '0934-567-890',
                 'email': 'chang@example.com',
                 'specialty': '小兒科',
                 'gender': '女',
@@ -39,7 +36,6 @@ def init_database():
             },
             {
                 'name': '陳志強',
-                'phone': '0945-678-901',
                 'email': 'chen@example.com',
                 'specialty': '骨科',
                 'gender': '男',
@@ -47,7 +43,6 @@ def init_database():
             },
             {
                 'name': '林雅婷',
-                'phone': '0956-789-012',
                 'email': 'lin@example.com',
                 'specialty': '婦產科',
                 'gender': '女',
@@ -55,7 +50,6 @@ def init_database():
             },
             {
                 'name': '黃建國',
-                'phone': '0967-890-123',
                 'email': 'huang@example.com',
                 'specialty': '眼科',
                 'gender': '男',
@@ -63,7 +57,6 @@ def init_database():
             },
             {
                 'name': '吳佳穎',
-                'phone': '0978-901-234',
                 'email': 'wu@example.com',
                 'specialty': '皮膚科',
                 'gender': '女',
@@ -71,7 +64,6 @@ def init_database():
             },
             {
                 'name': '周俊傑',
-                'phone': '0989-012-345',
                 'email': 'chou@example.com',
                 'specialty': '牙科',
                 'gender': '男',

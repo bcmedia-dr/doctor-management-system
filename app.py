@@ -17,6 +17,7 @@ db = SQLAlchemy(app)
 # 資料庫模型
 class Doctor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
     email = db.Column(db.String(100))
     specialty = db.Column(db.String(50))
     gender = db.Column(db.String(10))
@@ -32,6 +33,7 @@ class Doctor(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'name': self.name,
             'email': self.email,
             'specialty': self.specialty,
             'gender': self.gender,
@@ -129,6 +131,7 @@ def create_doctor():
     try:
         data = request.json
         doctor = Doctor(
+            name=data.get('name'),
             email=data.get('email'),
             specialty=data.get('specialty'),
             gender=data.get('gender'),
@@ -157,6 +160,7 @@ def update_doctor(id):
         doctor = Doctor.query.get_or_404(id)
         data = request.json
         
+        doctor.name = data.get('name', doctor.name)
         doctor.email = data.get('email', doctor.email)
         doctor.specialty = data.get('specialty', doctor.specialty)
         doctor.gender = data.get('gender', doctor.gender)
@@ -227,8 +231,8 @@ def init_database():
                 
                 # 检查是否需要迁移（旧字段存在或新字段不存在）
                 needs_migration = (
-                    'name' in columns or 
                     'phone' in columns or 
+                    'name' not in columns or
                     'has_social_media' not in columns or 
                     'social_media_link' not in columns or
                     'current_brand' not in columns or
@@ -256,4 +260,4 @@ def init_database():
 
 if __name__ == '__main__':
     init_database()
-    print("資料庫初始化完成！")
+    app.run(host='0.0.0.0', port=8080, debug=True)
