@@ -231,9 +231,13 @@ def import_excel():
     if file.filename == '':
         return jsonify({'error': '沒有選擇檔案'}), 400
     
-    # 檢查檔案格式
-    if not file.filename.endswith(('.xlsx', '.xls')):
-        return jsonify({'error': '檔案格式錯誤，請上傳 Excel 檔案 (.xlsx 或 .xls)'}), 400
+    # 檢查檔案格式（只支援 openpyxl 支援的格式）
+    allowed_extensions = ('.xlsx', '.xlsm', '.xltx', '.xltm')
+    if not file.filename.lower().endswith(allowed_extensions):
+        return jsonify({
+            'error': '檔案格式錯誤',
+            'message': f'請上傳 Excel 檔案（支援格式：.xlsx、.xlsm、.xltx、.xltm）。如果您的檔案是 .xls 格式，請先用 Excel 轉換為 .xlsx 格式。'
+        }), 400
     
     try:
         # 儲存上傳的檔案

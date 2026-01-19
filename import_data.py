@@ -1,5 +1,7 @@
 from openpyxl import load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
 from datetime import datetime
+import os
 
 def import_doctors_from_excel(file_path, db, Doctor):
     """從 Excel 文件匯入醫師資料（按照匯出格式）"""
@@ -7,9 +9,73 @@ def import_doctors_from_excel(file_path, db, Doctor):
     success_count = 0
     
     try:
-        # 使用 data_only=True 來讀取計算後的值，read_only=True 提高性能
-        wb = load_workbook(file_path, data_only=True)
+        # 檢查檔案是否存在
+        if not os.path.exists(file_path):
+            return {
+                'success': False,
+                'success_count': 0,
+                'errors': ['匯入失敗：檔案不存在']
+            }
+        
+        # 檢查檔案大小（避免處理過大的檔案）
+        file_size = os.path.getsize(file_path)
+        if file_size == 0:
+            return {
+                'success': False,
+                'success_count': 0,
+                'errors': ['匯入失敗：檔案為空']
+            }
+        if file_size > 10 * 1024 * 1024:  # 10MB
+            return {
+                'success': False,
+                'success_count': 0,
+                'errors': ['匯入失敗：檔案過大（超過 10MB）']
+            }
+        
+        # 檢查檔案格式（通過副檔名和檔案內容）
+        file_ext = os.path.splitext(file_path)[1].lower()
+        if file_ext not in ['.xlsx', '.xlsm', '.xltx', '.xltm']:
+            return {
+                'success': False,
+                'success_count': 0,
+                'errors': [f'匯入失敗：不支援的檔案格式 ({file_ext})。請使用 .xlsx、.xlsm、.xltx 或 .xltm 格式']
+            }
+        
+        # 嘗試讀取檔案，檢查是否為有效的 Excel 檔案
+        try:
+            # 使用 data_only=True 來讀取計算後的值
+            wb = load_workbook(file_path, data_only=True, read_only=True)
+        except InvalidFileException as e:
+            return {
+                'success': False,
+                'success_count': 0,
+                'errors': [f'匯入失敗：檔案格式不正確。請確認檔案是有效的 Excel 檔案（.xlsx 格式），並且可以用 Excel 開啟。錯誤詳情：{str(e)}']
+            }
+        except Exception as e:
+            error_msg = str(e)
+            if 'does not support file format' in error_msg or 'file format' in error_msg.lower():
+                return {
+                    'success': False,
+                    'success_count': 0,
+                    'errors': ['匯入失敗：檔案格式不支援。請確認檔案是 .xlsx 格式，並且可以用 Excel 正常開啟。如果檔案是 .xls 格式，請先用 Excel 轉換為 .xlsx 格式。']
+                }
+            else:
+                return {
+                    'success': False,
+                    'success_count': 0,
+                    'errors': [f'匯入失敗：無法讀取檔案。請確認檔案沒有損壞，並且可以用 Excel 開啟。錯誤詳情：{str(e)}']
+                }
+        
         sheet = wb.active
+        
+        # 檢查工作表是否為空
+        if sheet.max_row < 2:
+            wb.close()
+            return {
+                'success': False,
+                'success_count': 0,
+                'errors': ['匯入失敗：Excel 檔案中沒有資料（至少需要標題列和一行資料）']
+            }
         
         # 讀取標題行（第一行），確保正確處理中文編碼
         headers = []
@@ -156,6 +222,9 @@ def import_doctors_from_excel(file_path, db, Doctor):
                 errors.append(f"第 {row_num} 行處理失敗：{str(e)}")
                 continue
         
+        # 關閉工作簿
+        wb.close()
+        
         # 提交所有變更
         db.session.commit()
         
@@ -167,8 +236,20 @@ def import_doctors_from_excel(file_path, db, Doctor):
         
     except Exception as e:
         db.session.rollback()
+        error_msg = str(e)
+        
+        # 提供更友好的錯誤訊息
+        if 'does not support file format' in error_msg or 'file format' in error_msg.lower():
+            friendly_error = '匯入失敗：檔案格式不支援。請確認檔案是 .xlsx 格式，並且可以用 Excel 正常開啟。如果檔案是 .xls 格式，請先用 Excel 轉換為 .xlsx 格式。'
+        elif 'No such file' in error_msg or 'cannot find' in error_msg.lower():
+            friendly_error = '匯入失敗：找不到檔案。請確認檔案已正確上傳。'
+        elif 'Permission denied' in error_msg:
+            friendly_error = '匯入失敗：沒有權限讀取檔案。'
+        else:
+            friendly_error = f'匯入失敗：{error_msg}'
+        
         return {
             'success': False,
             'success_count': 0,
-            'errors': [f'匯入失敗：{str(e)}']
+            'errors': [friendly_error]
         }

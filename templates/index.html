@@ -741,9 +741,24 @@
                 return;
             }
             
-            // 檢查檔案格式
-            if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-                alert('請選擇 Excel 檔案 (.xlsx 或 .xls)');
+            // 檢查檔案格式（只支援 openpyxl 支援的格式）
+            const allowedExtensions = ['.xlsx', '.xlsm', '.xltx', '.xltm'];
+            const fileExt = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+            if (!allowedExtensions.includes(fileExt)) {
+                alert('檔案格式錯誤！\n\n請選擇 Excel 檔案（支援格式：.xlsx、.xlsm、.xltx、.xltm）\n\n如果您的檔案是 .xls 格式，請先用 Excel 轉換為 .xlsx 格式。');
+                event.target.value = '';
+                return;
+            }
+            
+            // 檢查檔案大小（限制 10MB）
+            if (file.size > 10 * 1024 * 1024) {
+                alert('檔案過大！\n\n請選擇小於 10MB 的檔案。');
+                event.target.value = '';
+                return;
+            }
+            
+            if (file.size === 0) {
+                alert('檔案為空！\n\n請選擇有效的 Excel 檔案。');
                 event.target.value = '';
                 return;
             }
@@ -778,17 +793,29 @@
                     loadDoctors();
                     loadStats();
                 } else {
-                    let errorMsg = result.error || '匯入失敗';
+                    let errorMsg = '匯入失敗！';
+                    if (result.error) {
+                        errorMsg += '\n' + result.error;
+                    }
+                    if (result.message) {
+                        errorMsg += '\n' + result.message;
+                    }
                     if (result.errors && result.errors.length > 0) {
-                        errorMsg += '\n\n錯誤詳情：\n' + result.errors.slice(0, 10).join('\n');
-                        if (result.errors.length > 10) {
-                            errorMsg += `\n... 還有 ${result.errors.length - 10} 個錯誤`;
+                        errorMsg += '\n\n錯誤詳情：\n' + result.errors.slice(0, 5).join('\n');
+                        if (result.errors.length > 5) {
+                            errorMsg += `\n... 還有 ${result.errors.length - 5} 個錯誤`;
                         }
                     }
                     alert(errorMsg);
                 }
             } catch (error) {
-                alert('匯入失敗！\n' + error.message);
+                let errorMsg = '匯入失敗！\n\n';
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMsg += '網路連線錯誤，請檢查網路連線後重試。';
+                } else {
+                    errorMsg += error.message;
+                }
+                alert(errorMsg);
             } finally {
                 // 清空文件選擇，允許重新選擇相同檔案
                 event.target.value = '';
