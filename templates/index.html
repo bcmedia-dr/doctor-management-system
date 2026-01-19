@@ -63,6 +63,52 @@
             border-radius: 10px;
             margin-bottom: 20px;
         }
+        
+        /* 表格整體優化 */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .table {
+            width: 100%;
+            min-width: 1200px; /* 確保表格最小寬度 */
+            table-layout: fixed; /* 固定表格佈局 */
+        }
+        
+        /* 欄位寬度分配 */
+        .table colgroup col:nth-child(1) { width: 4%; }   /* 編號 */
+        .table colgroup col:nth-child(2) { width: 8%; }   /* 醫師 */
+        .table colgroup col:nth-child(3) { width: 7%; }   /* 科別 */
+        .table colgroup col:nth-child(4) { width: 5%; }   /* 性別 */
+        .table colgroup col:nth-child(5) { width: 7%; }   /* 狀態 */
+        .table colgroup col:nth-child(6) { width: 8%; }   /* 聯絡窗口 */
+        .table colgroup col:nth-child(7) { width: 18%; }  /* 合作品牌 - 最寬 */
+        .table colgroup col:nth-child(8) { width: 10%; }  /* 報價區間 */
+        .table colgroup col:nth-child(9) { width: 7%; }   /* 經營社群 */
+        .table colgroup col:nth-child(10) { width: 10%; } /* 醫師社群 */
+        .table colgroup col:nth-child(11) { width: 16%; } /* 操作 */
+        
+        /* 儲存格樣式 */
+        .table td, .table th {
+            padding: 12px 8px;
+            vertical-align: middle;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        /* 文字處理 */
+        .table td {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        
+        /* 標題不換行 */
+        .table th {
+            white-space: nowrap;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -190,19 +236,32 @@
             <!-- 醫師列表 -->
             <div class="table-container">
                 <table class="table table-hover">
+                    <colgroup>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col> <!-- 合作品牌 -->
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                    </colgroup>
                     <thead class="table-light sticky-top">
                         <tr>
-                            <th style="width: 60px;">編號</th>
-                            <th style="width: 120px;">醫師</th>
+                            <th>編號</th>
+                            <th>醫師</th>
                             <th>科別</th>
-                            <th style="width: 80px;">性別</th>
-                            <th style="width: 100px;">狀態</th>
-                            <th style="width: 100px;">聯絡窗口</th>
-                            <th style="width: 150px;">合作品牌</th>
-                            <th style="width: 120px;">報價區間</th>
-                            <th style="width: 100px;">經營社群</th>
-                            <th style="width: 120px;">醫師社群</th>
-                            <th style="width: 120px;">操作</th>
+                            <th>性別</th>
+                            <th>狀態</th>
+                            <th>聯絡窗口</th>
+                            <th>合作品牌</th>
+                            <th>報價區間</th>
+                            <th>經營社群</th>
+                            <th>醫師社群</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="doctorList">
