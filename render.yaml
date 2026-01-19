@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: doctor-management-system
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: doctor-db
+          property: connectionString
+
+databases:
+  - name: doctor-db
+    databaseName: doctors
+    user: doctors_user
