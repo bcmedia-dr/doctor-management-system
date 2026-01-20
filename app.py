@@ -135,9 +135,12 @@ def create_doctor():
     
     try:
         data = request.json
+        # 如果沒有提供 name，則使用 email 作為 name
+        doctor_name = data.get('name') or data.get('email') or ''
+        doctor_email = data.get('email') or data.get('name') or ''
         doctor = Doctor(
-            name=data.get('name'),
-            email=data.get('email'),
+            name=doctor_name,
+            email=doctor_email,
             specialty=data.get('specialty'),
             gender=data.get('gender'),
             status=data.get('status', '未聯繫'),  # 默认状态改为未聯繫
@@ -165,8 +168,17 @@ def update_doctor(id):
         doctor = Doctor.query.get_or_404(id)
         data = request.json
         
-        doctor.name = data.get('name', doctor.name)
-        doctor.email = data.get('email', doctor.email)
+        # 如果提供了 name，優先使用；否則如果提供了 email，使用 email；否則保持原值
+        if 'name' in data and data.get('name'):
+            doctor.name = data.get('name')
+        elif 'email' in data and data.get('email'):
+            doctor.name = data.get('email')
+        
+        # email 字段處理：如果提供了 email，使用它；否則如果提供了 name，使用 name；否則保持原值
+        if 'email' in data and data.get('email'):
+            doctor.email = data.get('email')
+        elif 'name' in data and data.get('name'):
+            doctor.email = data.get('name')
         doctor.specialty = data.get('specialty', doctor.specialty)
         doctor.gender = data.get('gender', doctor.gender)
         doctor.status = data.get('status', doctor.status)

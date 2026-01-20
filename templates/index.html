@@ -414,16 +414,16 @@
                             </select>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">合作品牌</label>
+                            <input type="text" class="form-control" id="doctorCurrentBrand" placeholder="請輸入合作品牌">
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">經營社群</label>
                             <select class="form-select" id="doctorHasSocialMedia">
                                 <option value="">請選擇</option>
                                 <option value="是">是</option>
                                 <option value="否">否</option>
                             </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">合作品牌</label>
-                            <input type="text" class="form-control" id="doctorCurrentBrand" placeholder="請輸入合作品牌">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">報價區間</label>
@@ -586,7 +586,7 @@
                 const row = `
                     <tr>
                         <td>${displayNumber}</td>
-                        <td style="font-size: 0.9rem;">${doctor.email || '-'}</td>
+                        <td style="font-size: 0.9rem;">${doctor.email || doctor.name || '-'}</td>
                         <td>${doctor.specialty || '-'}</td>
                         <td>${doctor.gender || '-'}</td>
                         <td>${statusBadge}</td>
@@ -654,7 +654,8 @@
             const doctor = currentDoctors.find(d => d.id === id);
             document.getElementById('modalTitle').textContent = '編輯醫師';
             document.getElementById('doctorId').value = doctor.id;
-            document.getElementById('doctorEmail').value = doctor.email || '';
+            // 優先使用 name，如果沒有則使用 email
+            document.getElementById('doctorEmail').value = doctor.name || doctor.email || '';
             document.getElementById('doctorSpecialty').value = doctor.specialty || '';
             document.getElementById('doctorGender').value = doctor.gender || '';
             document.getElementById('doctorStatus').value = doctor.status || '';
@@ -669,8 +670,10 @@
         // 儲存醫師
         async function saveDoctor() {
             const id = document.getElementById('doctorId').value;
+            const doctorName = document.getElementById('doctorEmail').value; // 醫師名稱
             const data = {
-                email: document.getElementById('doctorEmail').value,
+                name: doctorName,  // 同時設置 name 和 email
+                email: doctorName,
                 specialty: document.getElementById('doctorSpecialty').value,
                 gender: document.getElementById('doctorGender').value,
                 status: document.getElementById('doctorStatus').value,

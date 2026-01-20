@@ -87,10 +87,9 @@ def import_doctors_from_excel(file_path, db, Doctor):
             else:
                 headers.append('')
         
-        # 定義匯出檔案的標準欄位順序（與 export.py 和表格顯示順序完全一致）
-        # 表格顯示順序：編號、醫師、科別、性別、狀態、聯絡窗口、合作品牌、報價區間、經營社群、醫師社群
-        # 匯出標題順序：編號、醫師、科別、性別、狀態、聯絡窗口、合作品牌、報價區間、經營社群、醫師社群、建立時間、更新時間
-        expected_headers = ['編號', '醫師', '科別', '性別', '狀態', '聯絡窗口', '合作品牌', '報價區間', '經營社群', '醫師社群', '建立時間', '更新時間']
+        # 定義匯出檔案的標準欄位順序（與 export.py 完全一致）
+        # 匯出標題順序：醫師、科別、性別、狀態、聯絡窗口、經營社群、醫師社群、合作品牌、報價區間
+        expected_headers = ['醫師', '科別', '性別', '狀態', '聯絡窗口', '經營社群', '醫師社群', '合作品牌', '報價區間']
         
         # 找到各欄位的索引位置（優先使用標準順序，如果標題匹配）
         column_map = {}
@@ -99,7 +98,7 @@ def import_doctors_from_excel(file_path, db, Doctor):
         # 檢查是否與標準格式一致
         if len(headers) >= len(expected_headers):
             matches = sum(1 for i, h in enumerate(expected_headers) if i < len(headers) and headers[i] == h)
-            if matches >= 8:  # 至少8個欄位匹配，使用標準順序
+            if matches >= 7:  # 至少7個欄位匹配，使用標準順序
                 use_standard_order = True
                 for idx, header_name in enumerate(expected_headers):
                     column_map[header_name] = idx
@@ -110,10 +109,8 @@ def import_doctors_from_excel(file_path, db, Doctor):
         if not use_standard_order:
             for idx, header in enumerate(headers):
                 header_str = str(header).strip() if header else ''
-                # 精確匹配優先，避免誤判
-                if header_str == '編號' or header_str == '序號':
-                    column_map['編號'] = idx
-                elif header_str == '醫師':
+                # 精確匹配優先，避免誤判（按照標準欄位順序）
+                if header_str == '醫師':
                     column_map['醫師'] = idx
                 elif header_str == '科別':
                     column_map['科別'] = idx
@@ -123,18 +120,16 @@ def import_doctors_from_excel(file_path, db, Doctor):
                     column_map['狀態'] = idx
                 elif header_str == '聯絡窗口':
                     column_map['聯絡窗口'] = idx
-                elif header_str == '合作品牌':
-                    column_map['合作品牌'] = idx
-                elif header_str == '報價區間':
-                    column_map['報價區間'] = idx
                 elif header_str == '經營社群':
                     column_map['經營社群'] = idx
                 elif header_str == '醫師社群':
                     column_map['醫師社群'] = idx
-                # 如果精確匹配失敗，使用模糊匹配作為備選
-                elif ('編號' in header_str or '序號' in header_str) and '編號' not in column_map:
-                    column_map['編號'] = idx
-                elif '醫師' in header_str and '社群' not in header_str and '醫師' not in column_map:
+                elif header_str == '合作品牌':
+                    column_map['合作品牌'] = idx
+                elif header_str == '報價區間':
+                    column_map['報價區間'] = idx
+                # 如果精確匹配失敗，使用模糊匹配作為備選（按照標準欄位順序）
+                elif ('醫師' in header_str or 'Email' in header_str or 'email' in header_str.lower()) and '醫師' not in column_map:
                     column_map['醫師'] = idx
                 elif '科別' in header_str and '科別' not in column_map:
                     column_map['科別'] = idx
@@ -144,16 +139,16 @@ def import_doctors_from_excel(file_path, db, Doctor):
                     column_map['狀態'] = idx
                 elif '聯絡' in header_str and '窗口' in header_str and '聯絡窗口' not in column_map:
                     column_map['聯絡窗口'] = idx
-                elif '合作品牌' in header_str and '合作品牌' not in column_map:
-                    column_map['合作品牌'] = idx
-                elif '報價' in header_str and '報價區間' not in column_map:
-                    column_map['報價區間'] = idx
                 elif '經營社群' in header_str and '經營社群' not in column_map:
                     column_map['經營社群'] = idx
                 elif '醫師社群' in header_str and '醫師社群' not in column_map:
                     column_map['醫師社群'] = idx
+                elif '合作品牌' in header_str and '合作品牌' not in column_map:
+                    column_map['合作品牌'] = idx
+                elif '報價' in header_str and '報價區間' not in column_map:
+                    column_map['報價區間'] = idx
         
-        # 檢查必要的欄位是否存在
+        # 檢查必要的欄位是否存在（至少需要「醫師」欄位）
         required_fields = ['醫師']
         missing_fields = [field for field in required_fields if field not in column_map]
         if missing_fields:
@@ -195,42 +190,47 @@ def import_doctors_from_excel(file_path, db, Doctor):
                             return str(value).strip()
                     return ''
                 
-                # 按照匯出格式的順序讀取：編號, 醫師, 科別, 性別, 狀態, 聯絡窗口, 合作品牌, 報價區間, 經營社群, 醫師社群
-                email = get_cell_value('醫師', 1)
+                # 按照標準欄位順序讀取：醫師、科別、性別、狀態、聯絡窗口、經營社群、醫師社群、合作品牌、報價區間
+                doctor_field = get_cell_value('醫師', 0).strip() if get_cell_value('醫師', 0) else ''
                 
                 # 如果醫師欄位為空，跳過這一行
-                if not email or not email.strip():
+                if not doctor_field:
                     continue
+                
+                # 同時存到 name 和 email
+                name = doctor_field
+                email = doctor_field
                 
                 # 清理和驗證資料
-                email = email.strip()
-                specialty = get_cell_value('科別', 2).strip() if get_cell_value('科別', 2) else None
-                gender = get_cell_value('性別', 3).strip() if get_cell_value('性別', 3) else None
-                status = (get_cell_value('狀態', 4) or '未聯繫').strip()
-                contact_person = get_cell_value('聯絡窗口', 5).strip() if get_cell_value('聯絡窗口', 5) else None
-                current_brand = get_cell_value('合作品牌', 6).strip() if get_cell_value('合作品牌', 6) else None
-                price_range = get_cell_value('報價區間', 7).strip() if get_cell_value('報價區間', 7) else None
-                has_social_media = get_cell_value('經營社群', 8).strip() if get_cell_value('經營社群', 8) else None
-                social_media_link = get_cell_value('醫師社群', 9).strip() if get_cell_value('醫師社群', 9) else None
+                specialty = get_cell_value('科別', 1).strip() if get_cell_value('科別', 1) else None
+                gender = get_cell_value('性別', 2).strip() if get_cell_value('性別', 2) else None
+                status = (get_cell_value('狀態', 3) or '未聯繫').strip()
+                contact_person = get_cell_value('聯絡窗口', 4).strip() if get_cell_value('聯絡窗口', 4) else None
+                has_social_media = get_cell_value('經營社群', 5).strip() if get_cell_value('經營社群', 5) else None
+                social_media_link = get_cell_value('醫師社群', 6).strip() if get_cell_value('醫師社群', 6) else None
+                current_brand = get_cell_value('合作品牌', 7).strip() if get_cell_value('合作品牌', 7) else None
+                price_range = get_cell_value('報價區間', 8).strip() if get_cell_value('報價區間', 8) else None
                 
-                # 檢查是否已存在相同email的醫師（避免重複匯入）
-                existing_doctor = Doctor.query.filter_by(email=email).first()
+                # 檢查是否已存在相同email或name的醫師（避免重複匯入）
+                existing_doctor = Doctor.query.filter(
+                    (Doctor.email == email) | (Doctor.name == name)
+                ).first()
                 if existing_doctor:
-                    errors.append(f"第 {row_num} 行：醫師 '{email}' 已存在，已跳過")
+                    errors.append(f"第 {row_num} 行：醫師 '{name or email}' 已存在，已跳過")
                     continue
                 
-                # 創建新醫師記錄
+                # 創建新醫師記錄（按照標準欄位順序）
                 doctor = Doctor(
-                    name=email,  # 使用email字段存储醫師名称
-                    email=email,
-                    specialty=specialty if specialty else None,
-                    gender=gender if gender else None,
-                    status=status if status else '未聯繫',
-                    contact_person=contact_person if contact_person else None,
-                    has_social_media=has_social_media if has_social_media else None,
-                    social_media_link=social_media_link if social_media_link else None,
-                    current_brand=current_brand if current_brand else None,
-                    price_range=price_range if price_range else None
+                    name=name if name else None,  # 姓名
+                    email=email if email else None,  # Email
+                    specialty=specialty if specialty else None,  # 科別
+                    gender=gender if gender else None,  # 性別
+                    status=status if status else '未聯繫',  # 狀態
+                    contact_person=contact_person if contact_person else None,  # 聯絡窗口
+                    has_social_media=has_social_media if has_social_media else None,  # 經營社群
+                    social_media_link=social_media_link if social_media_link else None,  # 醫師社群
+                    current_brand=current_brand if current_brand else None,  # 合作品牌
+                    price_range=price_range if price_range else None  # 報價區間
                 )
                 
                 doctors_to_add.append(doctor)
