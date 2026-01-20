@@ -52,8 +52,10 @@ class Doctor(db.Model):
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return jsonify({'error': '請先登入'}), 401
         if not session.get('is_admin'):
-            return jsonify({'error': '需要主管權限'}), 403
+            return jsonify({'error': '需要管理員權限'}), 403
         return f(*args, **kwargs)
     return decorated_function
 

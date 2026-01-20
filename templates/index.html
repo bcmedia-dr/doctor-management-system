@@ -96,10 +96,18 @@
         }
         .action-buttons {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             justify-content: flex-end;
             flex-wrap: nowrap;
             flex: 0 0 auto;
+            align-items: center;
+        }
+        .action-buttons .btn {
+            white-space: nowrap;
+            min-width: fit-content;
+            flex-shrink: 0;
+            padding: 8px 12px;
+            font-size: 14px;
         }
         .filter-row {
             display: flex;
@@ -114,9 +122,11 @@
             }
             .action-buttons {
                 justify-content: stretch;
+                flex-wrap: wrap;
             }
             .action-buttons .btn {
-                flex: 1;
+                flex: 1 1 auto;
+                min-width: 120px;
             }
         }
         
@@ -258,6 +268,7 @@
                             <option value="耳鼻喉科">耳鼻喉科</option>
                             <option value="內科">內科</option>
                             <option value="外科">外科</option>
+                            <option value="醫美">醫美</option>
                             <option value="婦產科">婦產科</option>
                             <option value="皮膚科">皮膚科</option>
                             <option value="泌尿科">泌尿科</option>
@@ -372,6 +383,7 @@
                                 <option value="耳鼻喉科">耳鼻喉科</option>
                                 <option value="內科">內科</option>
                                 <option value="外科">外科</option>
+                                <option value="醫美">醫美</option>
                                 <option value="婦產科">婦產科</option>
                                 <option value="皮膚科">皮膚科</option>
                                 <option value="泌尿科">泌尿科</option>
@@ -542,7 +554,7 @@
             const specialties = [...new Set(allDoctors.map(d => d.specialty).filter(s => s && s.trim()))];
             
             // 預設科別選項（按順序）
-            const defaultSpecialties = ['小兒科', '家醫科', '耳鼻喉科', '內科', '外科', '婦產科', '皮膚科', '泌尿科', '精神科', '中醫師', '營養師', '復健科', '腎臟科', '心臟科', '神經科'];
+            const defaultSpecialties = ['小兒科', '家醫科', '耳鼻喉科', '內科', '外科', '醫美', '婦產科', '皮膚科', '泌尿科', '精神科', '中醫師', '營養師', '復健科', '腎臟科', '心臟科', '神經科'];
             const allSpecialties = [...new Set([...defaultSpecialties, ...specialties])];
             
             // 更新篩選選單

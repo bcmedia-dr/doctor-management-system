@@ -88,8 +88,8 @@ def import_doctors_from_excel(file_path, db, Doctor):
                 headers.append('')
         
         # 定義匯出檔案的標準欄位順序（與 export.py 完全一致）
-        # 匯出標題順序：醫師、科別、性別、狀態、聯絡窗口、經營社群、醫師社群、合作品牌、報價區間
-        expected_headers = ['醫師', '科別', '性別', '狀態', '聯絡窗口', '經營社群', '醫師社群', '合作品牌', '報價區間']
+        # 匯出標題順序：醫師、科別、性別、狀態、聯絡窗口、合作品牌、報價區間、經營社群、醫師社群
+        expected_headers = ['醫師', '科別', '性別', '狀態', '聯絡窗口', '合作品牌', '報價區間', '經營社群', '醫師社群']
         
         # 找到各欄位的索引位置（優先使用標準順序，如果標題匹配）
         column_map = {}
@@ -201,15 +201,15 @@ def import_doctors_from_excel(file_path, db, Doctor):
                 name = doctor_field
                 email = doctor_field
                 
-                # 清理和驗證資料
+                # 清理和驗證資料（按照標準欄位順序：醫師、科別、性別、狀態、聯絡窗口、合作品牌、報價區間、經營社群、醫師社群）
                 specialty = get_cell_value('科別', 1).strip() if get_cell_value('科別', 1) else None
                 gender = get_cell_value('性別', 2).strip() if get_cell_value('性別', 2) else None
                 status = (get_cell_value('狀態', 3) or '未聯繫').strip()
                 contact_person = get_cell_value('聯絡窗口', 4).strip() if get_cell_value('聯絡窗口', 4) else None
-                has_social_media = get_cell_value('經營社群', 5).strip() if get_cell_value('經營社群', 5) else None
-                social_media_link = get_cell_value('醫師社群', 6).strip() if get_cell_value('醫師社群', 6) else None
-                current_brand = get_cell_value('合作品牌', 7).strip() if get_cell_value('合作品牌', 7) else None
-                price_range = get_cell_value('報價區間', 8).strip() if get_cell_value('報價區間', 8) else None
+                current_brand = get_cell_value('合作品牌', 5).strip() if get_cell_value('合作品牌', 5) else None
+                price_range = get_cell_value('報價區間', 6).strip() if get_cell_value('報價區間', 6) else None
+                has_social_media = get_cell_value('經營社群', 7).strip() if get_cell_value('經營社群', 7) else None
+                social_media_link = get_cell_value('醫師社群', 8).strip() if get_cell_value('醫師社群', 8) else None
                 
                 # 檢查是否已存在相同email或name的醫師（避免重複匯入）
                 existing_doctor = Doctor.query.filter(

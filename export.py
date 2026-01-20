@@ -10,8 +10,8 @@ def export_doctors_to_excel(doctors):
     sheet.title = "醫師資料"
     
     # 設定標題列（簡化欄位，只保留必要資訊）
-    # 匯出順序：醫師、科別、性別、狀態、聯絡窗口、經營社群、醫師社群、合作品牌、報價區間
-    headers = ['醫師', '科別', '性別', '狀態', '聯絡窗口', '經營社群', '醫師社群', '合作品牌', '報價區間']
+    # 匯出順序：醫師、科別、性別、狀態、聯絡窗口、合作品牌、報價區間、經營社群、醫師社群
+    headers = ['醫師', '科別', '性別', '狀態', '聯絡窗口', '合作品牌', '報價區間', '經營社群', '醫師社群']
     sheet.append(headers)
     
     # 設定標題列樣式
@@ -36,10 +36,10 @@ def export_doctors_to_excel(doctors):
             doctor.gender or '',  # 性別
             doctor.status or '',  # 狀態
             doctor.contact_person or '',  # 聯絡窗口
-            doctor.has_social_media or '',  # 經營社群
-            doctor.social_media_link or '',  # 醫師社群
             doctor.current_brand or '',  # 合作品牌
-            doctor.price_range or ''  # 報價區間
+            doctor.price_range or '',  # 報價區間
+            doctor.has_social_media or '',  # 經營社群
+            doctor.social_media_link or ''  # 醫師社群
         ]
         sheet.append(row_data)
     
@@ -50,10 +50,10 @@ def export_doctors_to_excel(doctors):
         'C': 8,   # 性別
         'D': 12,  # 狀態
         'E': 12,  # 聯絡窗口
-        'F': 12,  # 經營社群
-        'G': 30,  # 醫師社群
-        'H': 20,  # 合作品牌
-        'I': 15   # 報價區間
+        'F': 20,  # 合作品牌
+        'G': 15,  # 報價區間
+        'H': 12,  # 經營社群
+        'I': 30   # 醫師社群
     }
     
     for col, width in column_widths.items():
