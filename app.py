@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from datetime import datetime
 import os
 from functools import wraps
@@ -14,6 +16,7 @@ if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+limiter = Limiter(get_remote_address, app=app, default_limits=[])
 
 # 資料庫模型
 class Doctor(db.Model):
@@ -59,12 +62,18 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# 限速錯誤處理
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({'error': '登入嘗試次數過多，請稍後再試'}), 429
+
 # 路由
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/login', methods=['POST'])
+@limiter.limit("5 per minute")
 def login():
     data = request.json
     username = data.get('username')
