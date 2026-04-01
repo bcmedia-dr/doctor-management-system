@@ -664,8 +664,8 @@
             const doctor = currentDoctors.find(d => d.id === id);
             document.getElementById('modalTitle').textContent = '編輯醫師';
             document.getElementById('doctorId').value = doctor.id;
-            // 優先使用 name，如果沒有則使用 email
-            document.getElementById('doctorEmail').value = doctor.name || doctor.email || '';
+            // 優先使用 email，如果沒有則使用 name（與表格顯示邏輯一致）
+            document.getElementById('doctorEmail').value = doctor.email || doctor.name || '';
             document.getElementById('doctorSpecialty').value = doctor.specialty || '';
             document.getElementById('doctorGender').value = doctor.gender || '';
             document.getElementById('doctorStatus').value = doctor.status || '';
