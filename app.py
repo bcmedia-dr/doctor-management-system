@@ -2,8 +2,9 @@ from flask import Flask, render_template, request, jsonify, send_file, session, 
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
+import secrets
 from functools import wraps
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -112,7 +113,10 @@ def get_doctors():
     
     if search:
         query = query.filter(
-            Doctor.email.contains(search)  # email字段存储醫師名称
+            db.or_(
+                Doctor.email.contains(search),
+                Doctor.name.contains(search)
+            )
         )
     
     if specialty:
@@ -350,6 +354,70 @@ def import_excel():
             'message': f'匯入過程中發生錯誤：{friendly_msg}',
             'errors': [friendly_msg]
         }), 500
+
+# ⚠️  臨時修復路由 — 完成後請移除此區塊並重新部署
+FIX_SECRET = secrets.token_urlsafe(32)
+print(f"🔐 修復密鑰：{FIX_SECRET}")
+print(f"🌐 修復路徑：/fix-database/{FIX_SECRET}")
+
+@app.route('/fix-database/<secret>', methods=['GET'])
+def fix_database_cloud(secret):
+    """雲端資料庫修復路由（一次性使用，完成後請移除）"""
+    if not secrets.compare_digest(secret, FIX_SECRET):
+        return jsonify({'error': '無效的密鑰'}), 403
+
+    try:
+        # 診斷
+        total = Doctor.query.count()
+        none_string = Doctor.query.filter(Doctor.name == 'None').count()
+        none_null   = Doctor.query.filter(Doctor.name == None).count()
+
+        # 修復 name='None' 字串
+        fixed_count = 0
+        for d in Doctor.query.filter(Doctor.name == 'None').all():
+            d.name = d.email
+            fixed_count += 1
+
+        # 修復 name=NULL
+        for d in Doctor.query.filter(Doctor.name == None).all():
+            d.name = d.email
+            fixed_count += 1
+
+        db.session.commit()
+
+        # 新增索引
+        index_error = None
+        try:
+            db.session.execute(text('CREATE INDEX IF NOT EXISTS idx_doctor_name      ON doctor(name)'))
+            db.session.execute(text('CREATE INDEX IF NOT EXISTS idx_doctor_email     ON doctor(email)'))
+            db.session.execute(text('CREATE INDEX IF NOT EXISTS idx_doctor_status    ON doctor(status)'))
+            db.session.execute(text('CREATE INDEX IF NOT EXISTS idx_doctor_specialty ON doctor(specialty)'))
+            db.session.execute(text('CREATE INDEX IF NOT EXISTS idx_doctor_gender    ON doctor(gender)'))
+            db.session.commit()
+            indexes_added = True
+        except Exception as ie:
+            indexes_added = False
+            index_error = str(ie)
+
+        # 驗證
+        same_count = sum(1 for d in Doctor.query.all() if d.name == d.email)
+        diff_count = Doctor.query.count() - same_count
+
+        return jsonify({
+            'success': True,
+            'timestamp': datetime.now().isoformat(),
+            'before':   {'total': total, 'none_string': none_string, 'none_null': none_null},
+            'fixed':    {'count': fixed_count},
+            'indexes':  {'added': indexes_added, 'error': index_error},
+            'after':    {'total': Doctor.query.count(), 'same': same_count, 'different': diff_count},
+            'message':  f'✅ 完成！修復 {fixed_count} 筆，索引{"新增成功" if indexes_added else "新增失敗：" + str(index_error)}',
+            'next_step': '請移除 app.py 中的 fix_database_cloud 路由後重新部署'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e), 'message': '❌ 修復失敗，資料已回滾'}), 500
+
 
 def init_database():
     """初始化数据库，检查并更新表结构"""
