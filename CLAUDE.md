@@ -14,6 +14,24 @@
 - 本地 SQLite 或雲端 PostgreSQL 資料庫支援
 - 已包含 Render.com 部署設定
 
+## ⚠️ 最重要規則（每次都要遵守）
+
+### 此專案只能操作 `doctor` table，絕對不能動診所系統的資料
+
+雲端 PostgreSQL（`doctor-db`）被**兩個系統共用**：
+
+| 系統 | Repo | 可操作的 table |
+|------|------|---------------|
+| 醫師管理系統（本專案） | `bcmedia-dr/doctor-management-system` | `doctor` |
+| 診所管理系統 | `bcmedia-dr/clinic-management-system` | `clinic`、`health_mall`、`campaign`、`campaign_clinic`、`baiwei_doctor`、`audit_log` |
+
+**禁止事項：**
+- 不能對 `clinic`、`health_mall`、`campaign`、`campaign_clinic`、`baiwei_doctor`、`audit_log` 做任何 SELECT / INSERT / UPDATE / DELETE
+- 不能執行 `db.drop_all()`（會清空所有 table，包含診所資料）
+- 不能修改 `doctor` table 的 schema 而不同步通知診所系統
+
+---
+
 ## 快速啟動
 
 ### 本地開發
