@@ -420,42 +420,13 @@ def fix_database_cloud(secret):
 
 
 def init_database():
-    """初始化数据库，检查并更新表结构"""
+    """初始化資料庫：只建立不存在的表，絕不刪除資料"""
     with app.app_context():
         try:
-            # 检查表是否存在
-            inspector = inspect(db.engine)
-            if 'doctor' in inspector.get_table_names():
-                columns = [col['name'] for col in inspector.get_columns('doctor')]
-                
-                # 检查是否需要迁移（旧字段存在或新字段不存在）
-                needs_migration = (
-                    'phone' in columns or 
-                    'name' not in columns or
-                    'has_social_media' not in columns or 
-                    'social_media_link' not in columns or
-                    'current_brand' not in columns or
-                    'price_range' not in columns
-                )
-                
-                if needs_migration:
-                    print("检测到数据库结构需要更新，正在迁移...")
-                    # 删除旧表
-                    db.drop_all()
-                    # 创建新表
-                    db.create_all()
-                    print("数据库迁移完成！")
-                else:
-                    # 确保表存在
-                    db.create_all()
-            else:
-                # 表不存在，直接创建
-                db.create_all()
-                print("数据库表已创建")
-        except Exception as e:
-            print(f"数据库初始化错误: {e}")
-            # 如果出错，尝试直接创建
             db.create_all()
+            print("資料庫初始化完成")
+        except Exception as e:
+            print(f"資料庫初始化錯誤: {e}")
 
 if __name__ == '__main__':
     with app.app_context():
