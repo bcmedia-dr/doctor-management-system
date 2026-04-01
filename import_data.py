@@ -159,10 +159,14 @@ def import_doctors_from_excel(file_path, db, Doctor):
                 'errors': [f'匯入失敗：Excel 檔案中缺少必要的欄位：{", ".join(missing_fields)}。請確認檔案格式正確。']
             }
         
+        # 預載所有已存在的 email 和 name，避免迴圈內 N+1 查詢
+        existing_emails = {d.email for d in Doctor.query.with_entities(Doctor.email).all() if d.email}
+        existing_names  = {d.name  for d in Doctor.query.with_entities(Doctor.name).all()  if d.name}
+
         # 從第二行開始讀取資料
         batch_size = 50  # 每批處理50筆資料
         doctors_to_add = []
-        
+
         for row_num, row in enumerate(sheet.iter_rows(min_row=2, values_only=False), start=2):
             # 跳過空行
             if not any(cell.value for cell in row):
@@ -211,11 +215,8 @@ def import_doctors_from_excel(file_path, db, Doctor):
                 has_social_media = get_cell_value('經營社群', 7).strip() if get_cell_value('經營社群', 7) else None
                 social_media_link = get_cell_value('醫師社群', 8).strip() if get_cell_value('醫師社群', 8) else None
                 
-                # 檢查是否已存在相同email或name的醫師（避免重複匯入）
-                existing_doctor = Doctor.query.filter(
-                    (Doctor.email == email) | (Doctor.name == name)
-                ).first()
-                if existing_doctor:
+                # 檢查是否已存在（用預載的 set 比對，不再逐行查資料庫）
+                if email in existing_emails or name in existing_names:
                     errors.append(f"第 {row_num} 行：醫師 '{name or email}' 已存在，已跳過")
                     continue
                 

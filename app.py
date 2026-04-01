@@ -218,15 +218,18 @@ def delete_doctor(id):
 def get_stats():
     if not session.get('logged_in'):
         return jsonify({'error': '請先登入'}), 401
-    
-    total = Doctor.query.count()
-    contracted = Doctor.query.filter_by(status='已簽約').count()
-    cooperated = Doctor.query.filter_by(status='合作過').count()
-    
+
+    from sqlalchemy import func, case
+    result = db.session.query(
+        func.count().label('total'),
+        func.sum(case((Doctor.status == '已簽約', 1), else_=0)).label('contracted'),
+        func.sum(case((Doctor.status == '合作過', 1), else_=0)).label('cooperated'),
+    ).one()
+
     return jsonify({
-        'total': total,
-        'contracted': contracted,
-        'cooperated': cooperated
+        'total': result.total or 0,
+        'contracted': result.contracted or 0,
+        'cooperated': result.cooperated or 0,
     })
 
 @app.route('/api/export')
@@ -234,7 +237,7 @@ def get_stats():
 def export_excel():
     from export import export_doctors_to_excel
     
-    doctors = Doctor.query.all()
+    doctors = Doctor.query.yield_per(500)
     file_path = export_doctors_to_excel(doctors)
     
     return send_file(file_path, as_attachment=True, download_name='醫師資料.xlsx')
