@@ -7,7 +7,7 @@ from sqlalchemy import inspect, text
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'kJ8mP2qL9xY3nM7tB5zX4cV6wN8bH1'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-prod')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///doctors.db')
 if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://')
@@ -70,13 +70,16 @@ def login():
     username = data.get('username')
     password = data.get('password')
     
-    # 簡單的登入驗證（實際應用應該使用資料庫和加密密碼）
-    if username == 'admin' and password == 'Bcm13011579!@':
+    # 從環境變數讀取密碼（本地開發 fallback 為舊密碼）
+    admin_password = os.environ.get('ADMIN_PASSWORD', 'Bcm13011579!@')
+    user_password  = os.environ.get('USER_PASSWORD',  'Bcm13011579')
+
+    if username == 'admin' and password == admin_password:
         session['logged_in'] = True
         session['is_admin'] = True
         session['username'] = username
         return jsonify({'success': True, 'is_admin': True})
-    elif username == 'user' and password == 'Bcm13011579':
+    elif username == 'user' and password == user_password:
         session['logged_in'] = True
         session['is_admin'] = False
         session['username'] = username
