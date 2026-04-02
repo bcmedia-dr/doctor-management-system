@@ -185,17 +185,11 @@ def update_doctor(id):
         doctor = Doctor.query.get_or_404(id)
         data = request.json
         
-        # 如果提供了 name，優先使用；否則如果提供了 email，使用 email；否則保持原值
-        if 'name' in data and data.get('name'):
-            doctor.name = data.get('name')
-        elif 'email' in data and data.get('email'):
-            doctor.name = data.get('email')
-        
-        # email 字段處理：如果提供了 email，使用它；否則如果提供了 name，使用 name；否則保持原值
-        if 'email' in data and data.get('email'):
-            doctor.email = data.get('email')
-        elif 'name' in data and data.get('name'):
-            doctor.email = data.get('name')
+        # name 和 email 儲存同一個值（醫師名稱），同步更新
+        display_value = data.get('name') or data.get('email')
+        if display_value:
+            doctor.name = display_value
+            doctor.email = display_value
         doctor.specialty = data.get('specialty', doctor.specialty)
         doctor.gender = data.get('gender', doctor.gender)
         doctor.status = data.get('status', doctor.status)
