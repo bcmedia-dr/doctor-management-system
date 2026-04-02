@@ -94,6 +94,20 @@
             min-width: 180px;
             max-width: 220px;
         }
+        .specialty-menu {
+            max-height: 300px;
+            overflow-y: auto;
+            min-width: 160px;
+        }
+        .specialty-menu .dropdown-item {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        th[onclick]:hover {
+            background-color: #e9ecef;
+        }
         .action-buttons {
             display: flex;
             gap: 8px;
@@ -259,25 +273,13 @@
                         <input type="text" class="form-control" id="searchInput" placeholder="🔍 搜尋醫師">
                     </div>
                     <div class="filter-group">
-                        <select class="form-select" id="specialtyFilter">
-                            <option value="">所有科別</option>
-                            <option value="小兒科">小兒科</option>
-                            <option value="家醫科">家醫科</option>
-                            <option value="耳鼻喉科">耳鼻喉科</option>
-                            <option value="內科">內科</option>
-                            <option value="外科">外科</option>
-                            <option value="醫美">醫美</option>
-                            <option value="婦產科">婦產科</option>
-                            <option value="皮膚科">皮膚科</option>
-                            <option value="泌尿科">泌尿科</option>
-                            <option value="精神科">精神科</option>
-                            <option value="中醫師">中醫師</option>
-                            <option value="營養師">營養師</option>
-                            <option value="復健科">復健科</option>
-                            <option value="腎臟科">腎臟科</option>
-                            <option value="心臟科">心臟科</option>
-                            <option value="神經科">神經科</option>
-                        </select>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button"
+                                    id="specialtyDropdownBtn" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                所有科別
+                            </button>
+                            <ul class="dropdown-menu specialty-menu" id="specialtyDropdownMenu"></ul>
+                        </div>
                     </div>
                     <div class="filter-group small">
                         <select class="form-select" id="genderFilter">
@@ -301,6 +303,15 @@
                             <option value="">經營社群</option>
                             <option value="是">是</option>
                             <option value="否">否</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select class="form-select" id="priceFilter">
+                            <option value="">所有報價</option>
+                            <option value="low">10萬以下</option>
+                            <option value="mid">10–30萬</option>
+                            <option value="high">30萬以上</option>
+                            <option value="none">未填寫</option>
                         </select>
                     </div>
                     <!-- 操作按鈕區域 -->
@@ -338,13 +349,13 @@
                     <thead class="table-light sticky-top">
                         <tr>
                             <th>編號</th>
-                            <th>醫師</th>
+                            <th onclick="sortBy('name')" style="cursor:pointer">醫師 <span id="sort-name"></span></th>
                             <th>科別</th>
                             <th>性別</th>
-                            <th>狀態</th>
+                            <th onclick="sortBy('status')" style="cursor:pointer">狀態 <span id="sort-status"></span></th>
                             <th>聯絡窗口</th>
                             <th>合作品牌</th>
-                            <th>報價區間</th>
+                            <th onclick="sortBy('price')" style="cursor:pointer">報價區間 <span id="sort-price"></span></th>
                             <th>經營社群</th>
                             <th>醫師社群</th>
                             <th>操作</th>
@@ -457,6 +468,9 @@
     <script>
         let isAdmin = false;
         let currentDoctors = [];
+        let selectedSpecialties = new Set();
+        let sortCol = null;
+        let sortDir = 1;
 
         // 檢查登入狀態
         async function checkAuth() {
@@ -524,21 +538,82 @@
             document.getElementById('cooperatedCount').textContent = data.cooperated;
         }
 
+        // 從報價字串抓第一個數字（支援 "70,000(議)" 等格式）
+        function extractPrice(str) {
+            if (!str) return null;
+            const match = String(str).replace(/,/g, '').match(/\d+/);
+            return match ? parseInt(match[0]) : null;
+        }
+
+        // 欄位排序
+        function sortBy(col) {
+            if (sortCol === col) { sortDir *= -1; }
+            else { sortCol = col; sortDir = 1; }
+            ['name', 'price', 'status'].forEach(c => {
+                const el = document.getElementById(`sort-${c}`);
+                if (el) el.textContent = c === sortCol ? (sortDir === 1 ? ' ▲' : ' ▼') : '';
+            });
+            loadDoctors();
+        }
+
+        // 科別多選 toggle
+        function toggleSpecialty(checkbox) {
+            if (checkbox.checked) selectedSpecialties.add(checkbox.value);
+            else selectedSpecialties.delete(checkbox.value);
+            updateSpecialtyBtn();
+            loadDoctors();
+        }
+
+        function updateSpecialtyBtn() {
+            const btn = document.getElementById('specialtyDropdownBtn');
+            if (selectedSpecialties.size === 0) btn.textContent = '所有科別';
+            else if (selectedSpecialties.size === 1) btn.textContent = `${[...selectedSpecialties][0]}`;
+            else btn.textContent = `${selectedSpecialties.size} 個科別`;
+        }
+
         // 載入醫師列表
         async function loadDoctors() {
             const search = document.getElementById('searchInput').value;
-            const specialty = document.getElementById('specialtyFilter').value;
             const gender = document.getElementById('genderFilter').value;
             const status = document.getElementById('statusFilter').value;
             const hasSocialMedia = document.getElementById('hasSocialMediaFilter').value;
-            
-            const params = new URLSearchParams({search, specialty, gender, status});
-            if (hasSocialMedia) {
-                params.append('has_social_media', hasSocialMedia);
-            }
+            const priceFilter = document.getElementById('priceFilter').value;
+
+            const params = new URLSearchParams({search, gender, status});
+            if (hasSocialMedia) params.append('has_social_media', hasSocialMedia);
+
             const response = await fetch(`/api/doctors?${params}`);
-            currentDoctors = await response.json();
-            
+            let doctors = await response.json();
+
+            // 科別多選過濾（client-side）
+            if (selectedSpecialties.size > 0) {
+                doctors = doctors.filter(d => selectedSpecialties.has(d.specialty));
+            }
+
+            // 報價過濾（client-side，智慧解析數字）
+            if (priceFilter) {
+                doctors = doctors.filter(d => {
+                    const price = extractPrice(d.price_range);
+                    if (priceFilter === 'none') return price === null;
+                    if (priceFilter === 'low')  return price !== null && price < 100000;
+                    if (priceFilter === 'mid')  return price !== null && price >= 100000 && price <= 300000;
+                    if (priceFilter === 'high') return price !== null && price > 300000;
+                });
+            }
+
+            // 排序
+            if (sortCol) {
+                const statusOrder = {'已簽約': 0, '合作過': 1, '聯繫過': 2, '有經紀': 3, '未聯繫': 4};
+                doctors.sort((a, b) => {
+                    let va, vb;
+                    if (sortCol === 'name')   { va = a.email||a.name||''; vb = b.email||b.name||''; }
+                    if (sortCol === 'price')  { va = extractPrice(a.price_range) ?? Infinity; vb = extractPrice(b.price_range) ?? Infinity; }
+                    if (sortCol === 'status') { va = statusOrder[a.status] ?? 99; vb = statusOrder[b.status] ?? 99; }
+                    return va < vb ? -sortDir : va > vb ? sortDir : 0;
+                });
+            }
+
+            currentDoctors = doctors;
             renderDoctors();
         }
 
@@ -555,18 +630,17 @@
             const defaultSpecialties = ['小兒科', '家醫科', '耳鼻喉科', '內科', '外科', '眼科', '牙科', '骨科', '醫美', '皮膚科', '婦產科', '泌尿科', '精神科', '復健科', '神經科', '腸胃科', '腎臟科', '心臟科', '新陳代謝科', '預防醫學', '一般科', '中醫師', '植髮醫師', '營養師', '藥師', '護理師', '物理治療師'];
             const allSpecialties = [...new Set([...defaultSpecialties, ...specialties])];
             
-            // 更新篩選選單
-            const specialtyFilter = document.getElementById('specialtyFilter');
-            const currentValue = specialtyFilter.value;
-            specialtyFilter.innerHTML = '<option value="">所有科別</option>';
+            // 更新科別 dropdown checkboxes
+            const menu = document.getElementById('specialtyDropdownMenu');
+            menu.innerHTML = '';
             allSpecialties.forEach(spec => {
-                const option = document.createElement('option');
-                option.value = spec;
-                option.textContent = spec;
-                specialtyFilter.appendChild(option);
+                const checked = selectedSpecialties.has(spec) ? 'checked' : '';
+                const li = document.createElement('li');
+                li.innerHTML = `<label class="dropdown-item"><input type="checkbox" value="${escapeHtml(spec)}" ${checked} onchange="toggleSpecialty(this)"> ${escapeHtml(spec)}</label>`;
+                menu.appendChild(li);
             });
-            specialtyFilter.value = currentValue;
-            
+            updateSpecialtyBtn();
+
             // 更新表單選單
             const doctorSpecialty = document.getElementById('doctorSpecialty');
             const currentFormValue = doctorSpecialty.value;
@@ -881,10 +955,10 @@
 
         // 監聽篩選變化
         document.getElementById('searchInput').addEventListener('input', loadDoctors);
-        document.getElementById('specialtyFilter').addEventListener('change', loadDoctors);
         document.getElementById('genderFilter').addEventListener('change', loadDoctors);
         document.getElementById('statusFilter').addEventListener('change', loadDoctors);
         document.getElementById('hasSocialMediaFilter').addEventListener('change', loadDoctors);
+        document.getElementById('priceFilter').addEventListener('change', loadDoctors);
 
         // 初始化
         checkAuth();
