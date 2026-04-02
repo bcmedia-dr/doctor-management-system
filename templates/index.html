@@ -580,30 +580,46 @@
             doctorSpecialty.value = currentFormValue;
         }
 
+        // 轉義 HTML 特殊字符，防止 XSS
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         // 渲染醫師列表
         function renderDoctors() {
             const tbody = document.getElementById('doctorList');
             tbody.innerHTML = '';
-            
+
             currentDoctors.forEach((doctor, index) => {
                 const statusBadge = getStatusBadge(doctor.status);
-                const socialMediaLink = doctor.social_media_link ? 
-                    `<a href="${doctor.social_media_link}" target="_blank" class="text-primary">
-                        <i class="bi bi-link-45deg"></i> 連結
-                    </a>` : '-';
-                // 使用索引+1作为显示编号，删除后自动递补
+                // 只允許 http/https 連結，防止 javascript: 協議注入
+                let socialMediaLink = '-';
+                if (doctor.social_media_link) {
+                    const url = doctor.social_media_link.trim();
+                    if (url.startsWith('http://') || url.startsWith('https://')) {
+                        socialMediaLink = `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-primary"><i class="bi bi-link-45deg"></i> 連結</a>`;
+                    } else {
+                        socialMediaLink = escapeHtml(url);
+                    }
+                }
                 const displayNumber = index + 1;
                 const row = `
                     <tr>
                         <td>${displayNumber}</td>
-                        <td style="font-size: 0.9rem;">${doctor.email || doctor.name || '-'}</td>
-                        <td>${doctor.specialty || '-'}</td>
-                        <td>${doctor.gender || '-'}</td>
+                        <td style="font-size: 0.9rem;">${escapeHtml(doctor.email || doctor.name) || '-'}</td>
+                        <td>${escapeHtml(doctor.specialty) || '-'}</td>
+                        <td>${escapeHtml(doctor.gender) || '-'}</td>
                         <td>${statusBadge}</td>
-                        <td>${doctor.contact_person || '-'}</td>
-                        <td>${doctor.current_brand || '-'}</td>
+                        <td>${escapeHtml(doctor.contact_person) || '-'}</td>
+                        <td>${escapeHtml(doctor.current_brand) || '-'}</td>
                         <td>${formatPriceRange(doctor.price_range)}</td>
-                        <td>${doctor.has_social_media || '-'}</td>
+                        <td>${escapeHtml(doctor.has_social_media) || '-'}</td>
                         <td>${socialMediaLink}</td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary" onclick="editDoctor(${doctor.id})">
