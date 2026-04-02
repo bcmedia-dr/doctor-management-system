@@ -448,7 +448,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">醫師社群</label>
-                            <input type="url" class="form-control" id="doctorSocialMediaLink" placeholder="請輸入連結網址">
+                            <textarea class="form-control" id="doctorSocialMediaLink" rows="3" placeholder="每行輸入一個連結（支援多個）&#10;https://www.instagram.com/...&#10;https://www.youtube.com/..."></textarea>
                         </div>
                     </form>
                 </div>
@@ -681,16 +681,20 @@
 
             currentDoctors.forEach((doctor, index) => {
                 const statusBadge = getStatusBadge(doctor.status);
-                // 只允許 http/https 連結，防止 javascript: 協議注入
+                // 只允許 http/https 連結，防止 javascript: 協議注入；支援多個連結（換行分隔）
                 let socialMediaLink = '-';
                 if (doctor.social_media_link) {
-                    const url = doctor.social_media_link.trim();
-                    if (url.startsWith('http://') || url.startsWith('https://')) {
-                        const safeUrl = escapeHtml(url);
-                        socialMediaLink = `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-primary me-1"><i class="bi bi-link-45deg"></i> 連結</a><button class="btn btn-sm btn-outline-secondary py-0 px-1 copy-btn" onclick="copyLink(this, '${safeUrl}')" title="複製連結"><i class="bi bi-clipboard"></i></button>`;
-                    } else {
-                        socialMediaLink = escapeHtml(url);
-                    }
+                    const urls = doctor.social_media_link.split('\n').map(u => u.trim()).filter(u => u);
+                    const parts = urls.map((url, i) => {
+                        if (url.startsWith('http://') || url.startsWith('https://')) {
+                            const safeUrl = escapeHtml(url);
+                            const label = urls.length > 1 ? `連結${i + 1}` : '連結';
+                            return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-primary me-1"><i class="bi bi-link-45deg"></i> ${label}</a><button class="btn btn-sm btn-outline-secondary py-0 px-1 copy-btn" onclick="copyLink(this, '${safeUrl}')" title="複製連結"><i class="bi bi-clipboard"></i></button>`;
+                        } else {
+                            return escapeHtml(url);
+                        }
+                    });
+                    if (parts.length > 0) socialMediaLink = parts.join('<br>');
                 }
                 const displayNumber = index + 1;
                 const row = `
