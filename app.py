@@ -4,16 +4,25 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from datetime import datetime
 import os
+import hmac
+import secrets
 from functools import wraps
 from sqlalchemy import inspect, text
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-prod')
+# SECRET_KEY：正式環境從環境變數讀取；若未設定則產生隨機值（不使用可被猜測的固定字串）
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///doctors.db')
 if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Session cookie 安全旗標
+IS_PROD = os.environ.get('RENDER') == 'true'
+app.config['SESSION_COOKIE_HTTPONLY'] = True          # 禁止 JavaScript 讀取 cookie
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'         # 降低 CSRF 風險
+app.config['SESSION_COOKIE_SECURE'] = IS_PROD         # 正式環境（HTTPS）才要求 Secure，本地開發不影響
 
 db = SQLAlchemy(app)
 limiter = Limiter(get_remote_address, app=app, default_limits=[])
@@ -79,16 +88,18 @@ def login():
     username = data.get('username')
     password = data.get('password')
     
-    # 從環境變數讀取密碼（本地開發 fallback 為舊密碼）
-    admin_password = os.environ.get('ADMIN_PASSWORD', 'Bcm13011579!@')
-    user_password  = os.environ.get('USER_PASSWORD',  'Bcm13011579')
+    # 從環境變數讀取密碼；未設定則直接擋下（不使用寫死的預設密碼）
+    admin_password = os.environ.get('ADMIN_PASSWORD')
+    user_password  = os.environ.get('USER_PASSWORD')
+    if not admin_password or not user_password:
+        return jsonify({'error': '系統設定錯誤，請聯絡管理員'}), 500
 
-    if username == 'admin' and password == admin_password:
+    if username == 'admin' and hmac.compare_digest(password, admin_password):
         session['logged_in'] = True
         session['is_admin'] = True
         session['username'] = username
         return jsonify({'success': True, 'is_admin': True})
-    elif username == 'user' and password == user_password:
+    elif username == 'user' and hmac.compare_digest(password, user_password):
         session['logged_in'] = True
         session['is_admin'] = False
         session['username'] = username
@@ -365,20 +376,30 @@ def import_excel():
 
 
 def init_database():
-    """初始化資料庫：只建立不存在的表，絕不刪除資料"""
+    """初始化資料庫：只建立不存在的表與效能索引，絕不刪除資料"""
     with app.app_context():
         try:
-            db.create_all()
-            print("資料庫初始化完成")
+            db.create_all()  # 只建立表格結構，不會清空數據
         except Exception as e:
             print(f"資料庫初始化錯誤: {e}")
+        # 常用篩選/搜尋欄位建立索引（IF NOT EXISTS，重複執行安全）
+        indexes = [
+            'CREATE INDEX IF NOT EXISTS idx_doctor_name      ON doctor(name)',
+            'CREATE INDEX IF NOT EXISTS idx_doctor_email     ON doctor(email)',
+            'CREATE INDEX IF NOT EXISTS idx_doctor_status    ON doctor(status)',
+            'CREATE INDEX IF NOT EXISTS idx_doctor_specialty ON doctor(specialty)',
+            'CREATE INDEX IF NOT EXISTS idx_doctor_gender    ON doctor(gender)',
+        ]
+        for sql in indexes:
+            try:
+                db.session.execute(text(sql))
+            except Exception as e:
+                print(f"建立索引失敗（{sql}）：{e}")
+        db.session.commit()
+        print("資料庫初始化完成")
+
+# 於 import 時初始化，確保 gunicorn（正式環境）啟動也會建立表與索引
+init_database()
 
 if __name__ == '__main__':
-    with app.app_context():
-        try:
-            db.create_all()  # ✅ 只建立表格結構,不會清空數據
-            print("數據庫表已創建")
-        except Exception as e:
-            print(f"數據庫初始化錯誤: {e}")
-            db.create_all()
     app.run(host='0.0.0.0', port=8080, debug=True)
