@@ -48,3 +48,7 @@ Thumbs.db
 
 # Environment variables
 .env
+
+# Local data backups (may contain personal information)
+backup_*.json
+backups/

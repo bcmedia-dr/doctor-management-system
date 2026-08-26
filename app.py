@@ -6,26 +6,89 @@ from datetime import datetime
 import os
 import hmac
 import secrets
+import tempfile
 from functools import wraps
 from sqlalchemy import inspect, text
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-# SECRET_KEY：正式環境從環境變數讀取；若未設定則產生隨機值（不使用可被猜測的固定字串）
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+IS_PROD = os.environ.get('RENDER') == 'true'
+_secret_key = os.environ.get('SECRET_KEY')
+if IS_PROD and not _secret_key:
+    raise RuntimeError('SECRET_KEY must be configured in production')
+app.config['SECRET_KEY'] = _secret_key or secrets.token_hex(32)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///doctors.db')
 if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Session cookie 安全旗標
-IS_PROD = os.environ.get('RENDER') == 'true'
 app.config['SESSION_COOKIE_HTTPONLY'] = True          # 禁止 JavaScript 讀取 cookie
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'         # 降低 CSRF 風險
 app.config['SESSION_COOKIE_SECURE'] = IS_PROD         # 正式環境（HTTPS）才要求 Secure，本地開發不影響
+app.config['SESSION_COOKIE_NAME'] = 'doctor_session'
+app.config['PERMANENT_SESSION_LIFETIME'] = 8 * 60 * 60
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+if IS_PROD:
+    app.config['TRUSTED_HOSTS'] = ['doctor-management-system-fpsw.onrender.com']
 
 db = SQLAlchemy(app)
 limiter = Limiter(get_remote_address, app=app, default_limits=[])
+
+_UNSAFE_METHODS = {'POST', 'PUT', 'PATCH', 'DELETE'}
+
+
+def _get_csrf_token():
+    token = session.get('_csrf_token')
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session['_csrf_token'] = token
+    return token
+
+
+@app.context_processor
+def inject_security_context():
+    return {'csrf_token': _get_csrf_token()}
+
+
+@app.before_request
+def enforce_api_authentication_and_csrf():
+    if request.method == 'OPTIONS':
+        return None
+
+    if request.path.startswith('/api/') and not session.get('logged_in'):
+        return jsonify({'error': '請先登入'}), 401
+
+    if request.endpoint != 'login' and request.method in _UNSAFE_METHODS:
+        if not session.get('logged_in'):
+            return jsonify({'error': '請先登入'}), 401
+        expected = session.get('_csrf_token', '')
+        supplied = request.headers.get('X-CSRF-Token', '')
+        if not expected or not supplied or not hmac.compare_digest(supplied, expected):
+            return jsonify({'error': 'CSRF 驗證失敗，請重新整理頁面後再試'}), 403
+
+    return None
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    response.headers.setdefault(
+        'Content-Security-Policy',
+        "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; "
+        "form-action 'self'; img-src 'self' data:; connect-src 'self'; "
+        "font-src 'self' data: https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net"
+    )
+    if IS_PROD:
+        response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    if session.get('logged_in') or request.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-store'
+    return response
 
 # 資料庫模型
 class Doctor(db.Model):
@@ -76,6 +139,11 @@ def admin_required(f):
 def ratelimit_handler(e):
     return jsonify({'error': '登入嘗試次數過多，請稍後再試'}), 429
 
+
+@app.errorhandler(413)
+def file_too_large(e):
+    return jsonify({'success': False, 'error': '檔案過大，最大允許 10MB'}), 413
+
 # 路由
 @app.route('/')
 def index():
@@ -84,9 +152,9 @@ def index():
 @app.route('/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def login():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
+    data = request.get_json(silent=True) or {}
+    username = str(data.get('username') or '')
+    password = str(data.get('password') or '')
     
     # 從環境變數讀取密碼；未設定則直接擋下（不使用寫死的預設密碼）
     admin_password = os.environ.get('ADMIN_PASSWORD')
@@ -95,15 +163,23 @@ def login():
         return jsonify({'error': '系統設定錯誤，請聯絡管理員'}), 500
 
     if username == 'admin' and hmac.compare_digest(password, admin_password):
+        csrf_token = _get_csrf_token()
+        session.clear()
         session['logged_in'] = True
         session['is_admin'] = True
         session['username'] = username
-        return jsonify({'success': True, 'is_admin': True})
+        session['_csrf_token'] = csrf_token
+        session.permanent = True
+        return jsonify({'success': True, 'is_admin': True, 'csrf_token': csrf_token})
     elif username == 'user' and hmac.compare_digest(password, user_password):
+        csrf_token = _get_csrf_token()
+        session.clear()
         session['logged_in'] = True
         session['is_admin'] = False
         session['username'] = username
-        return jsonify({'success': True, 'is_admin': False})
+        session['_csrf_token'] = csrf_token
+        session.permanent = True
+        return jsonify({'success': True, 'is_admin': False, 'csrf_token': csrf_token})
     else:
         return jsonify({'error': '帳號或密碼錯誤'}), 401
 
@@ -185,7 +261,8 @@ def create_doctor():
         return jsonify(doctor.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'儲存失敗：{str(e)}'}), 500
+        app.logger.exception('Failed to create doctor')
+        return jsonify({'error': '儲存失敗，請稍後再試'}), 500
 
 @app.route('/api/doctors/<int:id>', methods=['PUT'])
 def update_doctor(id):
@@ -215,7 +292,8 @@ def update_doctor(id):
         return jsonify(doctor.to_dict())
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'更新失敗：{str(e)}'}), 500
+        app.logger.exception('Failed to update doctor')
+        return jsonify({'error': '更新失敗，請稍後再試'}), 500
 
 @app.route('/api/doctors/<int:id>', methods=['DELETE'])
 @admin_required
@@ -228,7 +306,8 @@ def delete_doctor(id):
         return jsonify({'message': '刪除成功'})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'刪除失敗：{str(e)}'}), 500
+        app.logger.exception('Failed to delete doctor')
+        return jsonify({'error': '刪除失敗，請稍後再試'}), 500
 
 @app.route('/api/stats')
 def get_stats():
@@ -298,16 +377,10 @@ def import_excel():
             }), 400
         
         # 儲存上傳的檔案（使用系統臨時目錄）
-        import tempfile
-        upload_folder = tempfile.gettempdir()
-        os.makedirs(upload_folder, exist_ok=True)
         filename = secure_filename(file.filename)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        file_path = os.path.join(upload_folder, f'import_{timestamp}_{filename}')
-        
-        # 確保檔案路徑安全
-        if not os.path.isabs(file_path):
-            file_path = os.path.abspath(file_path)
+        suffix = os.path.splitext(filename)[1].lower() or '.xlsx'
+        fd, file_path = tempfile.mkstemp(prefix='doctor_import_', suffix=suffix)
+        os.close(fd)
         
         # 保存檔案
         file.save(file_path)
@@ -365,7 +438,9 @@ def import_excel():
         elif 'Connection' in error_msg or 'database' in error_msg.lower():
             friendly_msg = '資料庫連線錯誤，請稍後再試'
         else:
-            friendly_msg = error_msg
+            friendly_msg = '系統處理檔案時發生錯誤，請確認格式後重試'
+
+        app.logger.exception('Doctor import failed')
         
         return jsonify({
             'success': False,

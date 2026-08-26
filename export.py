@@ -1,7 +1,6 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from datetime import datetime
-import os
+from io import BytesIO
 
 def export_doctors_to_excel(doctors):
     """匯出醫師資料到 Excel"""
@@ -76,9 +75,8 @@ def export_doctors_to_excel(doctors):
     # 凍結首列
     sheet.freeze_panes = 'A2'
     
-    # 儲存檔案（確保UTF-8編碼支持）
-    file_path = f'/tmp/doctors_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
-    # openpyxl 自動處理 UTF-8 編碼，無需額外設置
-    wb.save(file_path)
-    
-    return file_path
+    # 直接在記憶體中產生檔案，避免敏感匯出資料殘留在共用暫存目錄。
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output

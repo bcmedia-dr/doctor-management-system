@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>BCM 醫師管理系統</title>
+    <script src="{{ url_for('static', filename='security.js') }}"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -501,6 +503,9 @@
             });
             
             if (response.ok) {
+                const result = await response.json();
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                if (csrfMeta && result.csrf_token) csrfMeta.content = result.csrf_token;
                 checkAuth();
             } else {
                 alert('登入失敗！請檢查帳號密碼');
@@ -662,7 +667,8 @@
         }
 
         // 複製社群連結
-        function copyLink(btn, url) {
+        function copyLink(btn) {
+            const url = btn.dataset.url || '';
             navigator.clipboard.writeText(url).then(() => {
                 const icon = btn.querySelector('i');
                 icon.className = 'bi bi-clipboard-check';
@@ -689,7 +695,7 @@
                         if (url.startsWith('http://') || url.startsWith('https://')) {
                             const safeUrl = escapeHtml(url);
                             const label = urls.length > 1 ? `連結${i + 1}` : '連結';
-                            return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-primary me-1"><i class="bi bi-link-45deg"></i> ${label}</a><button class="btn btn-sm btn-outline-secondary py-0 px-1 copy-btn" onclick="copyLink(this, '${safeUrl}')" title="複製連結"><i class="bi bi-clipboard"></i></button>`;
+                            return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-primary me-1"><i class="bi bi-link-45deg"></i> ${label}</a><button class="btn btn-sm btn-outline-secondary py-0 px-1 copy-btn" data-url="${safeUrl}" onclick="copyLink(this)" title="複製連結"><i class="bi bi-clipboard"></i></button>`;
                         } else {
                             return escapeHtml(url);
                         }
@@ -734,7 +740,7 @@
                 '有經紀': '<span class="badge bg-warning">有經紀</span>',
                 '未聯繫': '<span class="badge bg-secondary">未聯繫</span>'
             };
-            return badges[status] || status;
+            return badges[status] || escapeHtml(status);
         }
 
         // 格式化報價區間（添加千位分隔符）
@@ -743,7 +749,7 @@
             
             // 嘗試提取數字部分
             const numbers = priceRange.match(/\d+/g);
-            if (!numbers) return priceRange;
+            if (!numbers) return escapeHtml(priceRange);
             
             // 將數字格式化為帶千位分隔符的格式
             let formatted = priceRange;
@@ -752,7 +758,7 @@
                 formatted = formatted.replace(num, formattedNum);
             });
             
-            return formatted;
+            return escapeHtml(formatted);
         }
 
         // 新增醫師
