@@ -73,12 +73,12 @@ python app.py
 > **重要：** `name` 與 `email` 目前在業務邏輯上儲存同一個值（醫師名稱）。前端表格顯示優先用 `email`，編輯 modal 填入優先用 `name`，兩者優先順序相反，是已知的設計問題。搜尋功能（後端）只查 `email` 欄位。
 
 ### 身份驗證
-簡易 session 驗證，帳號密碼寫死在 [app.py:74-85](app.py#L74-L85)：
+Session 驗證，帳號名稱固定、密碼由環境變數提供：
 - 管理員：帳號 `admin`
 - 一般用戶：帳號 `user`
 - 裝飾器 `@admin_required` 保護刪除等敏感路由
-
-⚠️ **注意：** 帳號密碼為明文寫死。修改請直接編輯 [app.py:74-85](app.py#L74-L85) 後重新部署。
+- 正式環境必須設定 `SECRET_KEY`、`ADMIN_PASSWORD`、`USER_PASSWORD`
+- 禁止將實際密碼或金鑰寫入程式碼、文件或 Git remote URL
 
 ### 檔案結構
 ```
@@ -142,10 +142,9 @@ python reset_db.py  # 刪除所有資料並重建 schema
 ## 重要說明
 
 ### 帳號管理
-- **帳號密碼寫死於 [app.py:74-85](app.py#L74-L85)**
-- 雲端部署前必須修改
+- 帳號密碼由 Render Environment 的 `ADMIN_PASSWORD`、`USER_PASSWORD` 提供
 - 目前無使用者資料表
-- 任何帳號變更都需重新建置／部署
+- 更新環境變數後重新部署即可，不需修改程式碼
 
 ### 資料匯出格式
 `export.py` 產生的 Excel 格式：
@@ -170,7 +169,7 @@ python reset_db.py  # 刪除所有資料並重建 schema
 6. 重新初始化：`rm instance/doctors.db && python init_db.py`
 
 ### 修改帳號密碼
-編輯 [app.py:74-85](app.py#L74-L85)（`/login` 路由）直接改寫帳號密碼。
+更新 Render Environment 的 `ADMIN_PASSWORD` 或 `USER_PASSWORD`，不要修改登入路由。
 
 ### 自訂科別選項
 編輯 `templates/index.html` 的兩個位置：
@@ -205,7 +204,7 @@ git add . && git commit -m "說明" && git push
 - Push 成功後 Render 會自動偵測並部署（約 3–5 分鐘）
 
 ## 部署清單
-- [ ] 修改 [app.py:74-85](app.py#L74-L85) 的管理員／用戶密碼
+- [ ] 在 Render 設定 `SECRET_KEY`、`ADMIN_PASSWORD`、`USER_PASSWORD`
 - [ ] 本地測試 `python app.py`
 - [ ] `git add . && git commit -m "說明" && git push`
 - [ ] 連結 repo 至 Render.com
@@ -213,7 +212,7 @@ git add . && git commit -m "說明" && git push
 - [ ] 在 Render 儀表板確認資料庫連線正常
 
 ## 安全注意事項
-- 帳號密碼明文存在版本控制（上線前必須處理）
-- 簡易 session 驗證（目前未強制 HTTPS）
+- 帳號密碼與 session 金鑰僅存放於 Render Environment
+- 正式環境使用 Secure／HttpOnly／SameSite cookie、CSRF 驗證與 HTTPS 安全標頭
 - 醫師欄位無輸入驗證
 - 若實作多用戶系統，應加入密碼雜湊（bcrypt）

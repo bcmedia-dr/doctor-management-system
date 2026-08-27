@@ -110,23 +110,18 @@ git push -u origin main
 
 ### 登入系統
 
-預設帳號：
+系統保留 `admin` 與 `user` 兩個帳號名稱；實際密碼不存放在版本控制中。
 
-| 角色 | 帳號 | 密碼 | 權限 |
-|------|------|------|------|
-| 管理員 | admin | admin123 | 可刪除醫師 |
-| 一般用戶 | user | user123 | 無法刪除 |
+| 角色 | 帳號 | 密碼來源 | 權限 |
+|------|------|----------|------|
+| 管理員 | admin | `ADMIN_PASSWORD` 環境變數 | 可刪除醫師 |
+| 一般用戶 | user | `USER_PASSWORD` 環境變數 | 無法刪除 |
 
-**⚠️ 重要：部署到雲端後，請立即修改密碼！**
+正式環境另須設定高強度 `SECRET_KEY`，所有實際值都應只存放在 Render Environment。
 
 ### 修改密碼方法
 
-編輯 `app.py` 的第 43-52 行：
-```python
-if username == 'admin' and password == '你的新密碼':
-    session['logged_in'] = True
-    session['is_admin'] = True
-```
+在 Render Dashboard 的 Environment 頁面更新 `ADMIN_PASSWORD` 或 `USER_PASSWORD`，再儲存並重新部署。不要把密碼寫回 `app.py`、README 或任何 Git 追蹤檔案。
 
 ### 新增更多帳號
 
